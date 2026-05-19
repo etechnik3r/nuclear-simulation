@@ -45,9 +45,9 @@
             </div>
             <div>
                 <h1 class="text-xl font-bold tracking-tight text-white flex items-center gap-2">
-                    Nuklear-Leitstand <span class="text-xs bg-slate-800 text-slate-400 px-2 py-0.5 rounded border border-slate-700">v4.0-PROMPT_CRITICAL</span>
+                    Nuklear-Leitstand <span class="text-xs bg-slate-800 text-slate-400 px-2 py-0.5 rounded border border-slate-700">v4.1</span>
                 </h1>
-                <p class="text-sm text-slate-400">Interaktive Echtzeitsimulation mit Xenon-Effekt & verzögerten Neutronen</p>
+                <p class="text-xs text-slate-400">Interaktive Echtzeitsimulation mit Xenon-Effekt & verzögerten Neutronen</p>
             </div>
         </div>
 
@@ -57,7 +57,7 @@
                 <span class="w-2.5 h-2.5 rounded-full bg-green-500 animate-ping"></span>
                 Reaktor Stabil
             </div>
-            <button id="soundToggle" class="p-2 bg-slate-800 hover:bg-slate-700 rounded-lg text-slate-300 transition-colors" title="Sound stumlschalten/aktivieren">
+            <button id="soundToggle" class="p-2 bg-slate-800 hover:bg-slate-700 rounded-lg text-slate-300 transition-colors" title="Sound stummschalten/aktivieren">
                 <i data-lucide="volume-2" class="w-5 h-5" id="soundIcon"></i>
             </button>
         </div>
@@ -174,7 +174,7 @@
                     </div>
                 </div>
 
-                <!-- Haupt-Canvas für Teilchensimulation (Bedeutend vergrößertes min-h) -->
+                <!-- Haupt-Canvas für Teilchensimulation -->
                 <div class="relative flex-1 bg-slate-950 rounded-lg border border-slate-800 overflow-hidden min-h-[500px] md:min-h-[550px] lg:min-h-[600px] xl:min-h-[650px]">
                     <canvas id="coreCanvas" class="absolute inset-0 w-full h-full block cursor-crosshair"></canvas>
                     
@@ -468,7 +468,7 @@
             energyGenerated: 0, // Akkumulierte Energie in GWh
             
             // Xenon-Vergiftung (Physikalischer Zustand)
-            iodine: 0.0,      // Iod-135 Konzentration (Zerfällt zu Xe-135)
+            iodine: 0.0,      // Iod-135 Konzentration
             xenon: 0.0,       // Xenon-135 Konzentration (Extremer Absorber)
             
             // Betriebseinstellungen
@@ -551,7 +551,6 @@
                 this.isDelayed = isDelayed; 
                 
                 const angle = Math.random() * Math.PI * 2;
-                // Geschwindigkeit der schnellen Neutronen auf 3.8 herabgesetzt für optimale Sichtbarkeit
                 this.speed = this.isThermal ? 1.5 : (this.isDelayed ? 2.2 : 3.8);
                 this.vx = Math.cos(angle) * this.speed;
                 this.vy = Math.sin(angle) * this.speed;
@@ -607,7 +606,6 @@
             const w = canvas.width / window.devicePixelRatio;
             const h = canvas.height / window.devicePixelRatio;
             
-            // Berechne ein quadratisch-proportionales Gitter (spacingX === spacingY)
             const paddingX = w * 0.03;
             const paddingY = h * 0.06;
             
@@ -619,7 +617,6 @@
             gridWidth = atomSpacing * (REACTOR.cols - 1);
             gridHeight = atomSpacing * (REACTOR.rows - 1);
             
-            // Perfekte Zentrierung
             gridLeft = (w - gridWidth) / 2;
             gridTop = (h - gridHeight) / 2 + 10; 
 
@@ -632,7 +629,7 @@
             }
         }
 
-        // --- SIMULATIONSLOGIK (SCHLEIFE) ---
+        // --- PHYSIKALISCHE SIMULATIONSEINSTELLUNGEN ---
         let rawPowerMeasure = 0;
 
         function updateSimulation() {
@@ -653,11 +650,11 @@
             coolantValDisplay.innerText = `${Math.round(coolantFlow * 100)}%`;
             refuelSpeedValDisplay.innerText = `${refuelSpeedMult.toFixed(1)}x`;
 
-            // Thermodynamisches Feedback
-            const tempFactor = Math.max(0.05, 1 - Math.max(0, (REACTOR.temperature - 150) / 1400));
+            // --- THERMISCHES FEEDBACK (Feiner ausbalanciert, um Kaltlösch-Effekt abzufedern) ---
+            const tempFactor = Math.max(0.12, 1 - Math.max(0, (REACTOR.temperature - 150) / 1500));
             const activeModeratorEfficiency = baseModEfficiency * tempFactor;
 
-            // --- XENON & IOD BIOPHYSIKALISCHER ZERFALL ---
+            // --- XENON & IOD ZERFALL ---
             const iodineDecayRate = 0.0012;
             const decayedIodine = REACTOR.iodine * iodineDecayRate;
             REACTOR.iodine = Math.max(0, REACTOR.iodine - decayedIodine);
@@ -672,8 +669,7 @@
                 const fissionedAtoms = REACTOR.atoms.filter(a => a.status === 'fissioned');
                 if (fissionedAtoms.length > 0) {
                     const depletionRatio = fissionedAtoms.length / REACTOR.atoms.length;
-                    const baseRefuelChance = 0.035; // Erhöht für kontinuierliche Selbsterhaltung
-                    
+                    const baseRefuelChance = 0.035; 
                     const dynamicChance = (baseRefuelChance + (depletionRatio * 0.18)) * refuelSpeedMult;
 
                     let refuelsToProcess = Math.floor(dynamicChance);
@@ -710,17 +706,19 @@
             const boxW = gridWidth + containmentPadding * 2;
             const boxH = gridHeight + containmentPadding * 2;
 
+            const fuelRatio = REACTOR.atoms.filter(a => a.status === 'intact').length / REACTOR.atoms.length;
+
             for (let i = REACTOR.neutrons.length - 1; i >= 0; i--) {
                 const n = REACTOR.neutrons[i];
                 n.update();
 
-                // 1. Rand-Prüfung (Abbruch außerhalb des Canvas-Spielfelds)
+                // 1. Rand-Prüfung
                 if (n.x < 0 || n.x > w || n.y < 0 || n.y > h) {
                     REACTOR.neutrons.splice(i, 1);
                     continue;
                 }
 
-                // 2. Interaktion mit den Steuerstäben innerhalb des rechteckigen Behälters
+                // 2. Interaktion mit den Steuerstäben
                 let absorbed = false;
                 const numRods = REACTOR.controlRods;
                 const rodWidth = 14;
@@ -738,16 +736,16 @@
 
                 if (absorbed) continue;
 
-                // 3. Absorption durch Xenon-135 (Nukleares Gift)
+                // 3. Absorption durch Xenon-135
                 if (Math.random() < REACTOR.xenon * 0.08) {
                     REACTOR.neutrons.splice(i, 1);
                     REACTOR.xenon = Math.max(0, REACTOR.xenon - 0.002);
                     continue;
                 }
 
-                // 4. Moderation (Gesteigerte Moderationschance bei proportionaler Atomdichte)
+                // 4. Moderation (Geringere Rate pro Frame für sichtbar längere blaue Neutronen-Flugbahnen)
                 if (!n.isThermal) {
-                    if (Math.random() < activeModeratorEfficiency * 0.055) {
+                    if (Math.random() < activeModeratorEfficiency * 0.07) {
                         n.isThermal = true;
                         n.speed = 1.5;
                         const angle = Math.random() * Math.PI * 2;
@@ -760,8 +758,7 @@
                 for (let atom of REACTOR.atoms) {
                     if (atom.status === 'intact') {
                         const dist = Math.hypot(n.x - atom.x, n.y - atom.y);
-                        // Toleranzradius leicht vergrößert, um Fissionen bei höheren Geschwindigkeiten stabil zu treffen
-                        if (dist < atom.size + 3.2) {
+                        if (dist < atom.size + 5.5) {
                             let fissionProbability = n.isThermal ? 0.90 : 0.05;
 
                             if (Math.random() < fissionProbability) {
@@ -771,21 +768,27 @@
 
                                 playGeigerClick();
 
-                                // Erhöhte Energiefreisetzung pro Spaltung (Skaliert bis >3000MW)
+                                // Erhöhte Leistungsausbeute für dynamische Visualisierung
                                 rawPowerMeasure += 680; 
 
-                                // Spaltneutronen freisetzen
-                                const totalSpawn = Math.random() < 0.45 ? 2 : 3;
-                                for (let k = 0; k < totalSpawn; k++) {
-                                    if (Math.random() < 0.09) {
-                                        REACTOR.delayedNeutronQueue.push({
-                                            x: atom.x,
-                                            y: atom.y,
-                                            spawnTime: Date.now() + Math.random() * 1500 + 500 
-                                        });
-                                    } else {
-                                        REACTOR.neutrons.push(new Neutron(atom.x, atom.y, false));
-                                    }
+                                // --- PRÄZISE REPRODUKTIONS-RATEN (Optimiert für steuerbare Kettenreaktionen) ---
+                                // 1 promptes Neutron ist garantiert
+                                REACTOR.neutrons.push(new Neutron(atom.x, atom.y, false));
+
+                                // Ein zweites promptes Neutron entsteht mit einer ausbalancierten Wahrscheinlichkeit
+                                const promptChance2 = 0.12 + (fuelRatio * 0.15); // Erhöht für bessere Selbsterhaltung
+                                if (Math.random() < promptChance2) {
+                                    REACTOR.neutrons.push(new Neutron(atom.x, atom.y, false));
+                                }
+
+                                // Verzögertes Neutron wird Sekunden später eingereiht (Stabilisiert die Kettenreaktion)
+                                const delayedChance = 0.14 * fuelRatio; // Erhöht, damit der Reaktor sanfter reagiert
+                                if (Math.random() < delayedChance) {
+                                    REACTOR.delayedNeutronQueue.push({
+                                        x: atom.x,
+                                        y: atom.y,
+                                        spawnTime: Date.now() + Math.random() * 1500 + 500 
+                                    });
                                 }
 
                                 REACTOR.neutrons.splice(i, 1);
@@ -796,21 +799,26 @@
                 }
             }
 
-            // --- SPONTANE NEUTRONENQUELLE ---
-            // Erhöhte Wahrscheinlichkeit im Leerlauf zur Stabilisierung der Kettenreaktion
-            if (Math.random() < 0.12 || REACTOR.neutrons.length === 0) {
+            // --- SPONTANE NEUTRONENQUELLE & ANLASS-UNTERSTÜTZUNG ---
+            // Wenn der Reaktor fast leer ist, erhöht sich die Aktivität der Quelle, um das Anspringen zu erleichtern
+            const sourceChance = REACTOR.neutrons.length < 5 ? 0.25 : 0.08;
+            if (Math.random() < sourceChance || REACTOR.neutrons.length === 0) {
                 const randAtom = REACTOR.atoms[Math.floor(Math.random() * REACTOR.atoms.length)];
-                REACTOR.neutrons.push(new Neutron(randAtom.x + (Math.random()*12 - 6), randAtom.y + (Math.random()*12 - 6), false));
+                // Bei niedriger Neutronenzahl direkt thermische (langsame) Neutronen injizieren, um den Start zu sichern
+                const startThermal = REACTOR.neutrons.length < 5 ? (Math.random() < 0.6) : (Math.random() < 0.35);
+                REACTOR.neutrons.push(new Neutron(randAtom.x + (Math.random()*12 - 6), randAtom.y + (Math.random()*12 - 6), startThermal));
             }
 
-            // --- THERMODYNAMIK & LEISTUNGSKOPPLUNG ---
-            const heatGeneration = rawPowerMeasure * 0.0042;
-            const heatDissipation = (REACTOR.temperature - 150) * coolantFlow * 0.015;
+            // --- TRÄGE THERMODYNAMIK (Verhindert abruptes Explodieren) ---
+            // Berechnet die theoretische Zieltemperatur basierend auf Leistung & Kühlung
+            const targetTemperature = 150 + (rawPowerMeasure * 0.015) / Math.max(0.1, coolantFlow * 0.8);
             
-            REACTOR.temperature += (heatGeneration - heatDissipation);
-            if (REACTOR.temperature < 150) REACTOR.temperature = 150;
+            // Glättet die Temperaturänderung (Thermische Trägheit des schweren Stahl-Core)
+            REACTOR.temperature = REACTOR.temperature * 0.98 + targetTemperature * 0.02;
 
-            REACTOR.power = REACTOR.power * 0.88 + (rawPowerMeasure * 0.35) * 0.12;
+            // Leistung berechnen & glätten
+            const powerScale = 0.08;
+            REACTOR.power = REACTOR.power * 0.95 + (rawPowerMeasure * powerScale) * 0.05;
             rawPowerMeasure *= 0.82;
 
             REACTOR.energyGenerated += (REACTOR.power / 3600000);
@@ -826,7 +834,7 @@
 
             updateStatusDisplays(activeModeratorEfficiency);
 
-            // Meltdown bei 1800 Grad Celsius
+            // Meltdown bei Erreichen des strukturellen Limits von 1800 Grad Celsius
             if (REACTOR.temperature >= 1800) {
                 triggerMeltdown();
             }
@@ -839,7 +847,6 @@
 
             ctx.clearRect(0, 0, w, h);
 
-            // Rechteckiger Sicherheitsbehälter passend um das zentrierte Gitter zeichnen
             const containmentPadding = 15;
             const boxX = gridLeft - containmentPadding;
             const boxY = gridTop - containmentPadding;
@@ -855,17 +862,15 @@
             ctx.fill();
             ctx.stroke();
 
-            // Steuerstäbe zeichnen (gleiten von der Oberkante des Containments hinein)
-            // HINWEIS: Wir zeichnen diese zuerst (Z-Index unten), damit die Atome wunderschön darüber liegen!
+            // Steuerstäbe im Hintergrund zeichnen
             const rodInsertion = parseFloat(controlRodsSlider.value) / 100;
             const numRods = REACTOR.controlRods;
-            const rodWidth = 8; // Schlankeres Design für optimale Sichtbarkeit der Atome
+            const rodWidth = 8; 
             const currentRodLength = boxH * rodInsertion;
 
             for (let rIdx = 0; rIdx < numRods; rIdx++) {
                 const rodX = boxX + boxW * 0.2 + rIdx * (boxW * 0.2);
 
-                // Hintergrundführung
                 ctx.strokeStyle = '#1e293b';
                 ctx.lineWidth = 2;
                 ctx.beginPath();
@@ -882,13 +887,12 @@
                     ctx.fill();
                     ctx.stroke();
 
-                    // Warnende Absorber-Element-Spitzen (Gelb)
                     ctx.fillStyle = '#f59e0b';
                     ctx.fillRect(rodX - rodWidth/2, boxY + 2, rodWidth, 10);
                 }
             }
 
-            // Uran-Atome zeichnen (Liegen jetzt stolz vor den Stäben)
+            // Uran-Atome im Vordergrund zeichnen
             for (let atom of REACTOR.atoms) {
                 atom.draw();
             }
@@ -905,6 +909,7 @@
             const fuelRatio = REACTOR.atoms.filter(a => a.status === 'intact').length / REACTOR.atoms.length;
             const xenonDamping = Math.max(0.1, 1 - (REACTOR.xenon * 1.8));
 
+            // k-eff physikalisch schätzen
             let keff = (activeModEff * 2.3) * rodFactor * (0.3 + 0.7 * fuelRatio) * xenonDamping;
             if (keff < 0) keff = 0;
             
@@ -946,7 +951,7 @@
                 powerIndicator.className = "px-2 py-0.5 rounded text-[10px] font-semibold bg-green-500/10 text-green-400 border border-green-500/30 glow-green";
                 powerBar.className = "bg-green-500 h-full transition-all duration-300";
             } else {
-                powerIndicator.innerText = "ÜBERLAST (SUPERKRITISCH)";
+                powerIndicator.innerText = "ÜBERLAST (WARNUNG)";
                 powerIndicator.className = "px-2 py-0.5 rounded text-[10px] font-semibold bg-red-500/10 text-red-400 border border-red-500/30 animate-pulse glow-red";
                 powerBar.className = "bg-red-500 h-full transition-all duration-300";
             }
