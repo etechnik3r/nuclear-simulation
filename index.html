@@ -10,14 +10,32 @@
     <script src="https://unpkg.com/lucide@latest"></script>
     <style>
         /* Spezifische Styling-Ergänzungen für Leitwarten-Optik */
-        .glow-green { box-shadow: 0 0 15px rgba(34, 197, 94, 0.4); }
-        .glow-red { box-shadow: 0 0 15px rgba(239, 68, 68, 0.6); }
-        .glow-yellow { box-shadow: 0 0 15px rgba(234, 179, 8, 0.5); }
+        .glow-green { box-shadow: 0 0 12px rgba(34, 197, 94, 0.4); }
+        .glow-red { box-shadow: 0 0 12px rgba(239, 68, 68, 0.6); }
+        .glow-yellow { box-shadow: 0 0 12px rgba(234, 179, 8, 0.4); }
+        
+        /* Schlanke, dunkle Scrollbars für das Dashboard */
+        ::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+        ::-webkit-scrollbar-track {
+            background: rgba(15, 23, 42, 0.5); 
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #334155; 
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #475569; 
+        }
+
         ::-webkit-slider-thumb {
             -webkit-appearance: none;
             appearance: none;
-            width: 18px;
-            height: 18px;
+            width: 16px;
+            height: 16px;
             border-radius: 50%;
             background: #3b82f6;
             cursor: pointer;
@@ -25,8 +43,8 @@
             box-shadow: 0 0 5px rgba(0,0,0,0.5);
         }
         ::-moz-range-thumb {
-            width: 18px;
-            height: 18px;
+            width: 16px;
+            height: 16px;
             border-radius: 50%;
             background: #3b82f6;
             cursor: pointer;
@@ -35,245 +53,220 @@
         }
     </style>
 </head>
-<body class="bg-slate-950 text-slate-100 min-h-screen flex flex-col font-sans selection:bg-blue-500 selection:text-white">
+<body class="bg-slate-950 text-slate-100 h-screen w-screen overflow-hidden flex flex-col font-sans selection:bg-blue-500 selection:text-white">
 
-    <!-- Header der Applikation -->
-    <header class="border-b border-slate-800 bg-slate-900/80 backdrop-blur px-6 py-4 flex flex-wrap justify-between items-center gap-4 sticky top-0 z-50">
+    <!-- Header der Applikation (Kompakt) -->
+    <header class="border-b border-slate-800 bg-slate-900/90 backdrop-blur px-4 py-2.5 flex justify-between items-center z-50 shrink-0">
         <div class="flex items-center gap-3">
-            <div class="p-2 bg-yellow-500/10 rounded-lg text-yellow-500 animate-pulse">
-                <i data-lucide="radiation" class="w-6 h-6"></i>
+            <div class="p-1.5 bg-yellow-500/10 rounded text-yellow-500 animate-pulse">
+                <i data-lucide="radiation" class="w-5 h-5"></i>
             </div>
             <div>
-                <h1 class="text-xl font-bold tracking-tight text-white flex items-center gap-2">
-                    Nuklear-Leitstand <span class="text-xs bg-slate-800 text-slate-400 px-2 py-0.5 rounded border border-slate-700">v4.2</span>
+                <h1 class="text-base font-bold tracking-tight text-white flex items-center gap-2">
+                    Nuklear-Leitstand <span class="text-[10px] bg-slate-800 text-slate-400 px-1.5 py-0.5 rounded border border-slate-700">v5.0-DASHBOARD</span>
                 </h1>
-                <p class="text-xs text-slate-400">Interaktive Echtzeitsimulation mit Xenon-Effekt & verzögerten Neutronen</p>
+                <p class="text-[10px] text-slate-400">Interaktive Echtzeitsimulation der thermisch-nuklearen Kopplung</p>
             </div>
         </div>
 
-        <!-- Statusanzeige oben rechts -->
-        <div class="flex items-center gap-4">
-            <div id="statusBadge" class="px-3 py-1.5 rounded-full text-xs font-semibold uppercase flex items-center gap-2 bg-green-500/10 text-green-400 border border-green-500/30 glow-green">
-                <span class="w-2.5 h-2.5 rounded-full bg-green-500 animate-ping"></span>
+        <div class="flex items-center gap-3">
+            <div id="statusBadge" class="px-2.5 py-1 rounded-full text-[10px] font-semibold uppercase flex items-center gap-1.5 bg-green-500/10 text-green-400 border border-green-500/30 glow-green">
+                <span class="w-2 h-2 rounded-full bg-green-500 animate-ping"></span>
                 Reaktor Stabil
             </div>
-            <!-- Physik-Zahnrad & Sound -->
-            <button id="openSettingsBtn" class="p-2 bg-slate-800 hover:bg-slate-700 rounded-lg text-slate-300 transition-colors" title="Physikalische Kernparameter feinjustieren">
-                <i data-lucide="settings" class="w-5 h-5"></i>
+            <!-- Settings & Sound -->
+            <button id="openSettingsBtn" class="p-1.5 bg-slate-800 hover:bg-slate-700 rounded text-slate-300 transition-colors" title="Physikalische Kernparameter feinjustieren">
+                <i data-lucide="settings" class="w-4 h-4"></i>
             </button>
-            <button id="soundToggle" class="p-2 bg-slate-800 hover:bg-slate-700 rounded-lg text-slate-300 transition-colors" title="Sound stummschalten/aktivieren">
-                <i data-lucide="volume-2" class="w-5 h-5" id="soundIcon"></i>
+            <button id="soundToggle" class="p-1.5 bg-slate-800 hover:bg-slate-700 rounded text-slate-300 transition-colors" title="Sound stummschalten/aktivieren">
+                <i data-lucide="volume-2" class="w-4 h-4" id="soundIcon"></i>
             </button>
         </div>
     </header>
 
-    <!-- Hauptbereich -->
-    <main class="flex-1 grid grid-cols-1 xl:grid-cols-4 gap-6 p-6 max-w-[1800px] w-full mx-auto">
+    <!-- Hauptbereich - 3 Spalten Dashboard Design -->
+    <main class="flex-1 min-h-0 w-full max-w-[1920px] mx-auto p-3 lg:p-4 grid grid-cols-1 lg:grid-cols-12 gap-4 overflow-hidden">
         
-        <!-- LINKES PANEL: Kontrollen & Parameter -->
-        <section class="xl:col-span-1 bg-slate-900/60 border border-slate-800 rounded-xl p-5 flex flex-col gap-5 backdrop-blur">
-            <h2 class="text-lg font-semibold text-white border-b border-slate-800 pb-2 flex items-center gap-2">
-                <i data-lucide="sliders" class="w-5 h-5 text-blue-400"></i> Primärparameter
-            </h2>
+        <!-- LINKES PANEL: Kontrollen & Parameter (Scrollbar falls zu klein) -->
+        <section class="lg:col-span-3 flex flex-col gap-4 overflow-y-auto pr-1 pb-2">
+            
+            <div class="bg-slate-900/60 border border-slate-800 rounded-lg p-3.5 backdrop-blur flex-shrink-0">
+                <h2 class="text-sm font-semibold text-white border-b border-slate-800 pb-2 mb-3 flex items-center gap-2">
+                    <i data-lucide="sliders" class="w-4 h-4 text-blue-400"></i> Primärparameter
+                </h2>
 
-            <!-- Parameter 1: Steuerstäbe -->
-            <div class="space-y-1.5">
-                <div class="flex justify-between items-center">
-                    <label class="text-sm font-medium text-slate-300 flex items-center gap-1.5">
-                        <i data-lucide="arrow-down-to-line" class="w-4 h-4 text-slate-400"></i> Steuerstäbe (Absorber)
-                    </label>
-                    <span id="rodValDisplay" class="text-xs font-mono bg-slate-950 px-2 py-0.5 rounded border border-slate-880 text-blue-400">0%</span>
-                </div>
-                <input type="range" id="controlRods" min="0" max="100" value="30" 
-                       class="w-full h-2 bg-slate-950 rounded-lg appearance-none cursor-pointer border border-slate-800">
-                <p class="text-xs text-slate-400">Fängt freie Neutronen ein. Tieferes Einfahren senkt die Reaktivität.</p>
-            </div>
-
-            <!-- Parameter 2: Moderator -->
-            <div class="space-y-1.5">
-                <div class="flex justify-between items-center">
-                    <label class="text-sm font-medium text-slate-300 flex items-center gap-1.5">
-                        <i data-lucide="waves" class="w-4 h-4 text-teal-400"></i> Moderator-Effektivität
-                    </label>
-                    <span id="modValDisplay" class="text-xs font-mono bg-slate-950 px-2 py-0.5 rounded border border-slate-800 text-teal-400">70%</span>
-                </div>
-                <input type="range" id="moderator" min="0" max="100" value="70" 
-                       class="w-full h-2 bg-slate-950 rounded-lg appearance-none cursor-pointer border border-slate-800">
-                <p class="text-xs text-slate-400">Bremst schnelle Neutronen ab. Nur thermische Neutronen spalten U-235 effizient.</p>
-            </div>
-
-            <!-- Parameter 3: Kühlmittel -->
-            <div class="space-y-1.5">
-                <div class="flex justify-between items-center">
-                    <label class="text-sm font-medium text-slate-300 flex items-center gap-1.5">
-                        <i data-lucide="droplet" class="w-4 h-4 text-cyan-400"></i> Kühlmitteldurchsatz
-                    </label>
-                    <span id="coolantValDisplay" class="text-xs font-mono bg-slate-950 px-2 py-0.5 rounded border border-slate-800 text-cyan-400">50%</span>
-                </div>
-                <input type="range" id="coolant" min="5" max="100" value="50" 
-                       class="w-full h-2 bg-slate-950 rounded-lg appearance-none cursor-pointer border border-slate-800">
-                <p class="text-xs text-slate-400">Führt Wärme ab. Zu geringer Durchfluss riskiert schnelles Durchgehen.</p>
-            </div>
-
-            <hr class="border-slate-800">
-
-            <!-- Sektion: Brennstoff-Management (Verbesserte Struktur & Verständlichkeit) -->
-            <div class="flex flex-col gap-3">
-                <h3 class="text-sm font-bold text-white uppercase tracking-wider flex items-center gap-2">
-                    <i data-lucide="package" class="w-4 h-4 text-emerald-400"></i> Brennstoff-Management
-                </h3>
-                
-                <div class="grid grid-cols-2 gap-2">
-                    <button id="refuelBtn" class="py-2.5 bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-medium rounded-lg border border-slate-700 transition-colors flex items-center justify-center gap-1.5" title="Ersetzt alle verbrauchten Atome sofort">
-                        <i data-lucide="battery-charging" class="w-4 h-4 text-emerald-400"></i> Manuell Refuel
-                    </button>
-                    <button id="autoRefuelBtn" class="py-2.5 bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-medium rounded-lg border border-slate-700 transition-all flex items-center justify-center gap-1.5" title="Füllt verbrauchten Brennstoff kontinuierlich automatisch nach">
-                        <i data-lucide="refresh-cw" class="w-4 h-4 text-cyan-400" id="autoRefuelIcon"></i> 
-                        <span id="autoRefuelText" class="text-xs">Auto-Refuel: AUS</span>
-                    </button>
-                </div>
-
-                <!-- Hierhin verschoben: Regenerationsrate des Brennstoffs (Unter die Tasten) -->
-                <div class="space-y-1.5 bg-slate-950/40 p-3 rounded-lg border border-slate-850">
+                <!-- Parameter 1: Steuerstäbe -->
+                <div class="space-y-1 mb-3">
                     <div class="flex justify-between items-center">
-                        <label class="text-xs font-medium text-slate-300 flex items-center gap-1.5">
-                            <i data-lucide="gauge-circle" class="w-3.5 h-3.5 text-emerald-400"></i> Regenerationsrate (Auto-Refuel-Tempo)
+                        <label class="text-xs font-medium text-slate-300 flex items-center gap-1">
+                            <i data-lucide="arrow-down-to-line" class="w-3.5 h-3.5 text-slate-400"></i> Steuerstäbe (Absorber)
                         </label>
-                        <span id="refuelSpeedValDisplay" class="text-xs font-mono bg-slate-950 px-2 py-0.5 rounded border border-slate-800 text-emerald-400">1.0x</span>
+                        <span id="rodValDisplay" class="text-[10px] font-mono bg-slate-950 px-1.5 py-0.5 rounded border border-slate-800 text-blue-400">0%</span>
                     </div>
-                    <input type="range" id="refuelSpeed" min="0.1" max="15" step="0.1" value="1.0" 
-                           class="w-full h-2 bg-slate-950 rounded-lg appearance-none cursor-pointer border border-slate-850">
-                    <p class="text-[10px] text-slate-500">Beeinflusst, wie rasch Uran-Atome nach der Spaltung regenerieren.</p>
+                    <input type="range" id="controlRods" min="0" max="100" value="30" class="w-full h-1.5 bg-slate-950 rounded-lg appearance-none cursor-pointer border border-slate-800">
                 </div>
 
-                <button id="neutronSourceBtn" class="w-full py-2.5 bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-medium rounded-lg border border-slate-700 transition-colors flex items-center justify-center gap-1.5" title="Injiziert zusätzliche Neutronen zum Starten">
+                <!-- Parameter 2: Moderator -->
+                <div class="space-y-1 mb-3">
+                    <div class="flex justify-between items-center">
+                        <label class="text-xs font-medium text-slate-300 flex items-center gap-1">
+                            <i data-lucide="waves" class="w-3.5 h-3.5 text-teal-400"></i> Moderator-Effektivität
+                        </label>
+                        <span id="modValDisplay" class="text-[10px] font-mono bg-slate-950 px-1.5 py-0.5 rounded border border-slate-800 text-teal-400">70%</span>
+                    </div>
+                    <input type="range" id="moderator" min="0" max="100" value="70" class="w-full h-1.5 bg-slate-950 rounded-lg appearance-none cursor-pointer border border-slate-800">
+                </div>
+
+                <!-- Parameter 3: Kühlmittel -->
+                <div class="space-y-1">
+                    <div class="flex justify-between items-center">
+                        <label class="text-xs font-medium text-slate-300 flex items-center gap-1">
+                            <i data-lucide="droplet" class="w-3.5 h-3.5 text-cyan-400"></i> Kühlmitteldurchsatz
+                        </label>
+                        <span id="coolantValDisplay" class="text-[10px] font-mono bg-slate-950 px-1.5 py-0.5 rounded border border-slate-800 text-cyan-400">50%</span>
+                    </div>
+                    <input type="range" id="coolant" min="5" max="100" value="50" class="w-full h-1.5 bg-slate-950 rounded-lg appearance-none cursor-pointer border border-slate-800">
+                </div>
+            </div>
+
+            <div class="bg-slate-900/60 border border-slate-800 rounded-lg p-3.5 backdrop-blur flex-shrink-0">
+                <h2 class="text-sm font-semibold text-white border-b border-slate-800 pb-2 mb-3 flex items-center gap-2">
+                    <i data-lucide="package" class="w-4 h-4 text-emerald-400"></i> Brennstoff-Management
+                </h2>
+
+                <div class="grid grid-cols-2 gap-2 mb-3">
+                    <button id="refuelBtn" class="py-2 bg-slate-800 hover:bg-slate-700 text-slate-200 text-[11px] font-medium rounded border border-slate-700 transition-colors flex items-center justify-center gap-1">
+                        <i data-lucide="battery-charging" class="w-3.5 h-3.5 text-emerald-400"></i> Manuell Erneuern
+                    </button>
+                    <button id="autoRefuelBtn" class="py-2 bg-slate-800 hover:bg-slate-700 text-slate-200 text-[11px] font-medium rounded border border-slate-700 transition-all flex items-center justify-center gap-1">
+                        <i data-lucide="refresh-cw" class="w-3.5 h-3.5 text-cyan-400" id="autoRefuelIcon"></i> 
+                        <span id="autoRefuelText">Auto-Refuel: AUS</span>
+                    </button>
+                </div>
+
+                <!-- Parameter 4: Nachladetempo (Regenerationsrate) -->
+                <div class="space-y-1 bg-slate-950/40 p-2 rounded border border-slate-850">
+                    <div class="flex justify-between items-center">
+                        <label class="text-xs font-medium text-slate-300 flex items-center gap-1">
+                            <i data-lucide="gauge-circle" class="w-3.5 h-3.5 text-emerald-400"></i> Regenerationsrate (Tempo)
+                        </label>
+                        <span id="refuelSpeedValDisplay" class="text-[10px] font-mono bg-slate-950 px-1.5 py-0.5 rounded border border-slate-800 text-emerald-400">8.0x</span>
+                    </div>
+                    <!-- Standardwert ist nun 8.0 ! -->
+                    <input type="range" id="refuelSpeed" min="0.1" max="15" step="0.1" value="8.0" class="w-full h-1.5 bg-slate-950 rounded-lg appearance-none cursor-pointer border border-slate-850">
+                </div>
+            </div>
+
+            <div class="flex flex-col gap-2 mt-auto flex-shrink-0">
+                <button id="neutronSourceBtn" class="w-full py-2 bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-medium rounded border border-slate-700 transition-colors flex items-center justify-center gap-1.5">
                     <i data-lucide="zap" class="w-4 h-4 text-yellow-400"></i> Neutronenquelle zünden
                 </button>
 
-                <!-- SCRAM BUTTON -->
-                <button id="scramBtn" class="w-full py-3 mt-1 bg-red-600 hover:bg-red-700 active:bg-red-800 text-white font-bold rounded-lg transition-all flex items-center justify-center gap-2 uppercase tracking-wider glow-red text-xs border border-red-500/20">
+                <button id="scramBtn" class="w-full py-2.5 bg-red-600 hover:bg-red-700 active:bg-red-800 text-white font-bold rounded transition-all flex items-center justify-center gap-2 uppercase tracking-wider glow-red text-xs border border-red-500/20">
                     <i data-lucide="octagon-alert" class="w-4 h-4"></i> Schnellabschaltung (SCRAM)
                 </button>
             </div>
+        </section>
 
-            <!-- Physikalische Rückmeldung (Feedback-Schleife) -->
-            <div class="bg-slate-950/80 rounded-lg p-3 border border-slate-850 space-y-2 mt-auto">
-                <h3 class="text-xs font-semibold text-slate-300 uppercase tracking-wider">Kopplungs-Feedback</h3>
-                <div class="text-[12px] text-slate-400 leading-relaxed space-y-1">
-                    <p class="flex justify-between"><span>Negativer Temp-Koeffizient:</span> <span class="text-emerald-400">Aktiv</span></p>
-                    <p class="text-slate-500">Steigt die Kerntemperatur, sinkt die Effizienz des Moderators (Dichteabnahme), was die reaction natürlich dämpft.</p>
+        <!-- MITTLERES PANEL: Echtzeit-Visuelle Core-Simulation (6 Spalten, füllt restlichen Platz) -->
+        <section class="lg:col-span-6 flex flex-col min-h-0 bg-slate-900/60 border border-slate-800 rounded-lg p-3 backdrop-blur">
+            <div class="flex justify-between items-center mb-2 shrink-0">
+                <h2 class="text-sm font-semibold text-white flex items-center gap-2">
+                    <i data-lucide="eye" class="w-4 h-4 text-emerald-400"></i> Reaktorkern (Live-Kessel)
+                </h2>
+                <!-- Legend -->
+                <div class="flex flex-wrap gap-2 text-[10px] font-mono text-slate-400">
+                    <span class="flex items-center gap-1"><span class="w-2 h-2 rounded-full bg-blue-400"></span> Schnelles n°</span>
+                    <span class="flex items-center gap-1"><span class="w-2 h-2 rounded-full bg-red-500"></span> Thermisches n°</span>
+                    <span class="flex items-center gap-1"><span class="w-2 h-2 rounded-full bg-yellow-400"></span> Verzögertes n°</span>
+                    <span class="flex items-center gap-1"><span class="w-2.5 h-2.5 rounded-full bg-emerald-500/20 border border-emerald-500"></span> U-235</span>
+                </div>
+            </div>
+
+            <!-- Haupt-Canvas (flex-1 erzwingt, dass es die Höhe ausfüllt) -->
+            <div class="relative flex-1 bg-slate-950 rounded border border-slate-800 overflow-hidden">
+                <canvas id="coreCanvas" class="absolute inset-0 w-full h-full block cursor-crosshair"></canvas>
+                
+                <!-- Overlay bei Kernschmelze -->
+                <div id="meltdownOverlay" class="absolute inset-0 bg-red-950/90 backdrop-blur-sm hidden flex-col items-center justify-center text-center p-6 z-20">
+                    <div class="p-3 bg-red-500/20 text-red-500 rounded-full animate-bounce mb-3 border border-red-500/40">
+                        <i data-lucide="skull" class="w-10 h-10"></i>
+                    </div>
+                    <h3 class="text-xl font-black text-red-500 uppercase tracking-widest mb-2 animate-pulse">KERNSCHMELZE</h3>
+                    <button id="resetMeltdownBtn" class="px-5 py-2 bg-red-600 hover:bg-red-500 text-white font-semibold rounded shadow-lg transition-all text-xs uppercase tracking-wider border border-red-400/30">
+                        Dekontaminieren & Reset
+                    </button>
+                </div>
+            </div>
+
+            <!-- Key-Metriken unter dem Kern -->
+            <div class="grid grid-cols-4 gap-2 mt-2 bg-slate-950 p-2 rounded border border-slate-850 text-center shrink-0">
+                <div>
+                    <p class="text-[9px] text-slate-500 uppercase font-semibold">k-eff</p>
+                    <p id="keffDisplay" class="text-sm font-mono font-bold text-yellow-400">0.00</p>
+                </div>
+                <div class="border-l border-slate-800">
+                    <p class="text-[9px] text-slate-500 uppercase font-semibold">Uranvorrat</p>
+                    <p id="fuelDisplay" class="text-sm font-mono font-bold text-emerald-400">100%</p>
+                </div>
+                <div class="border-l border-slate-800">
+                    <p class="text-[9px] text-slate-500 uppercase font-semibold">Fluss (n°)</p>
+                    <p id="neutronCountDisplay" class="text-sm font-mono font-bold text-blue-400">0</p>
+                </div>
+                <div class="border-l border-slate-800">
+                    <p class="text-[9px] text-slate-500 uppercase font-semibold">Xe-135</p>
+                    <p id="xenonValDisplay" class="text-sm font-mono font-bold text-indigo-400">0.0%</p>
                 </div>
             </div>
         </section>
 
-        <!-- MITTLERES PANEL: Echtzeit-Visuelle Core-Simulation -->
-        <section class="xl:col-span-2 flex flex-col gap-4">
-            <div class="bg-slate-900/60 border border-slate-800 rounded-xl p-4 flex-1 flex flex-col backdrop-blur">
-                <div class="flex justify-between items-center mb-3">
-                    <h2 class="text-lg font-semibold text-white flex items-center gap-2">
-                        <i data-lucide="eye" class="w-5 h-5 text-emerald-400"></i> Reaktorkern (Live-Schema: 468 Kerne)
-                    </h2>
-                    <!-- Mini-Anzeige für Teilchendichte -->
-                    <div class="flex flex-wrap gap-3 text-xs font-mono text-slate-400">
-                        <span class="flex items-center gap-1"><span class="w-2 h-2 rounded-full bg-blue-400"></span> Schnell n°</span>
-                        <span class="flex items-center gap-1"><span class="w-2.5 h-2.5 rounded-full bg-red-500"></span> Thermisch n°</span>
-                        <span class="flex items-center gap-1"><span class="w-2.5 h-2.5 rounded-full bg-yellow-400"></span> Verzögert n°</span>
-                        <span class="flex items-center gap-1"><span class="w-2.5 h-2.5 rounded-full bg-emerald-500/20 border border-emerald-500"></span> U-235</span>
-                    </div>
-                </div>
-
-                <!-- Haupt-Canvas für Teilchensimulation -->
-                <div class="relative flex-1 bg-slate-950 rounded-lg border border-slate-800 overflow-hidden min-h-[500px] md:min-h-[550px] lg:min-h-[600px] xl:min-h-[650px]">
-                    <canvas id="coreCanvas" class="absolute inset-0 w-full h-full block cursor-crosshair"></canvas>
-                    
-                    <!-- Overlay bei Kernschmelze -->
-                    <div id="meltdownOverlay" class="absolute inset-0 bg-red-950/90 backdrop-blur-sm hidden flex-col items-center justify-center text-center p-6 z-20">
-                        <div class="p-4 bg-red-500/20 text-red-500 rounded-full animate-bounce mb-4 border border-red-500/40">
-                            <i data-lucide="skull" class="w-12 h-12"></i>
-                        </div>
-                        <h3 class="text-2xl font-black text-red-500 uppercase tracking-widest mb-2 animate-pulse">KERNSCHMELZE / MELTDOWN</h3>
-                        <p class="text-slate-300 max-w-md text-sm mb-6 leading-relaxed">
-                            Die Kerntemperatur hat das strukturelle Limit überschritten. Das Uran ist geschmolzen, die Barrieren wurden durchbrochen.
-                        </p>
-                        <button id="resetMeltdownBtn" class="px-6 py-2.5 bg-red-600 hover:bg-red-500 text-white font-semibold rounded-lg shadow-lg shadow-red-900/40 transition-all text-xs uppercase tracking-wider border border-red-400/30">
-                            System dekontaminieren & Reset
-                        </button>
-                    </div>
-                </div>
-
-                <!-- Live Key-Metriken direkt unter dem Kern -->
-                <div class="grid grid-cols-4 gap-2 mt-4 bg-slate-950 p-2.5 rounded-lg border border-slate-850 text-center">
-                    <div>
-                        <p class="text-[10px] text-slate-500 uppercase font-semibold">Neutronenbilanz (k-eff)</p>
-                        <p id="keffDisplay" class="text-lg font-mono font-bold text-yellow-400 mt-0.5">0.00</p>
-                    </div>
-                    <div>
-                        <p class="text-[10px] text-slate-500 uppercase font-semibold">Abbrand (Uranvorrat)</p>
-                        <p id="fuelDisplay" class="text-lg font-mono font-bold text-emerald-400 mt-0.5">100%</p>
-                    </div>
-                    <div>
-                        <p class="text-[10px] text-slate-500 uppercase font-semibold">Neutronenfluss</p>
-                        <p id="neutronCountDisplay" class="text-lg font-mono font-bold text-blue-400 mt-0.5">0</p>
-                    </div>
-                    <div>
-                        <p class="text-[10px] text-slate-500 uppercase font-semibold">Xe-135 Vergiftung</p>
-                        <p id="xenonValDisplay" class="text-lg font-mono font-bold text-indigo-400 mt-0.5">0.0%</p>
-                    </div>
-                </div>
-            </div>
-        </section>
-
-        <!-- RECHTES PANEL: Analysen, Charts & Erklärungen -->
-        <section class="xl:col-span-1 flex flex-col gap-6">
+        <!-- RECHTES PANEL: Analysen & Charts (Scrollbar falls zu klein) -->
+        <section class="lg:col-span-3 flex flex-col gap-4 overflow-y-auto pl-1 pb-2">
             
-            <!-- Leistungsanzeige und Temperatur-Monitore -->
-            <div class="bg-slate-900/60 border border-slate-800 rounded-xl p-5 flex flex-col gap-4 backdrop-blur">
-                <h2 class="text-lg font-semibold text-white border-b border-slate-800 pb-2 flex items-center gap-2">
-                    <i data-lucide="gauge" class="w-5 h-5 text-yellow-400"></i> Systemvariablen
+            <div class="bg-slate-900/60 border border-slate-800 rounded-lg p-3.5 backdrop-blur flex-shrink-0">
+                <h2 class="text-sm font-semibold text-white border-b border-slate-800 pb-2 mb-3 flex items-center gap-2">
+                    <i data-lucide="gauge" class="w-4 h-4 text-yellow-400"></i> Metriken
                 </h2>
 
                 <!-- Leistung (MW) -->
-                <div class="bg-slate-950 p-4 rounded-lg border border-slate-850 relative overflow-hidden">
+                <div class="bg-slate-950 p-3 rounded border border-slate-850 relative overflow-hidden mb-3">
                     <div class="flex justify-between items-start">
                         <div>
-                            <p class="text-sm text-slate-400 uppercase font-semibold">Thermische Leistung</p>
-                            <h3 id="powerText" class="text-3xl font-mono font-bold text-green-400 mt-1">0.0 MW</h3>
+                            <p class="text-[10px] text-slate-400 uppercase font-semibold">Therm. Leistung</p>
+                            <h3 id="powerText" class="text-xl font-mono font-bold text-green-400 leading-none mt-1">0.0 MW</h3>
                         </div>
-                        <div id="powerIndicator" class="px-2 py-0.5 rounded text-[10px] font-semibold bg-green-500/10 text-green-400 border border-green-500/30">
+                        <div id="powerIndicator" class="px-1.5 py-0.5 rounded text-[9px] font-semibold bg-slate-800 text-slate-400 border border-slate-700 mt-0.5">
                             LEERLAUF
                         </div>
                     </div>
-                    <!-- Fortschrittsbalken Leistung -->
-                    <div class="w-full bg-slate-900 h-1.5 rounded-full mt-3 overflow-hidden">
-                        <div id="powerBar" class="bg-green-500 h-full transition-all duration-300" style="width: 0%"></div>
+                    <div class="w-full bg-slate-900 h-1 rounded-full mt-2 overflow-hidden">
+                        <div id="powerBar" class="bg-slate-500 h-full transition-all duration-300" style="width: 0%"></div>
                     </div>
                 </div>
 
                 <!-- Temperatur (°C) -->
-                <div class="bg-slate-950 p-4 rounded-lg border border-slate-850 relative overflow-hidden">
+                <div class="bg-slate-950 p-3 rounded border border-slate-850 relative overflow-hidden mb-3">
                     <div class="flex justify-between items-start">
                         <div>
-                            <p class="text-sm text-slate-400 uppercase font-semibold">Kerntemperatur</p>
-                            <h3 id="tempText" class="text-3xl font-mono font-bold text-cyan-400 mt-1">150.0 °C</h3>
+                            <p class="text-[10px] text-slate-400 uppercase font-semibold">Kerntemperatur</p>
+                            <h3 id="tempText" class="text-xl font-mono font-bold text-cyan-400 leading-none mt-1">150.0 °C</h3>
                         </div>
-                        <div id="tempIndicator" class="px-2 py-0.5 rounded text-[10px] font-semibold bg-cyan-500/10 text-cyan-400 border border-cyan-500/30">
+                        <div id="tempIndicator" class="px-1.5 py-0.5 rounded text-[9px] font-semibold bg-cyan-500/10 text-cyan-400 border border-cyan-500/30 mt-0.5">
                             KALT
                         </div>
                     </div>
-                    <!-- Fortschrittsbalken Temp -->
-                    <div class="w-full bg-slate-900 h-1.5 rounded-full mt-3 overflow-hidden">
+                    <div class="w-full bg-slate-900 h-1 rounded-full mt-2 overflow-hidden">
                         <div id="tempBar" class="bg-cyan-500 h-full transition-all duration-300" style="width: 10%"></div>
                     </div>
                 </div>
 
-                <!-- Live Graph Monitor -->
-                <div class="space-y-1.5">
-                    <p class="text-sm font-semibold text-slate-400 flex items-center gap-1.5">
-                        <i data-lucide="trending-up" class="w-4 h-4 text-blue-400"></i> Historischer Verlauf (30s)
+                <!-- Live Graph -->
+                <div class="space-y-1">
+                    <p class="text-[10px] font-semibold text-slate-400 flex items-center gap-1">
+                        <i data-lucide="trending-up" class="w-3 h-3 text-blue-400"></i> Verlauf (30s)
                     </p>
-                    <div class="bg-slate-950 rounded-lg border border-slate-850 p-2 h-36 relative">
-                        <!-- Legend overlay -->
-                        <div class="absolute top-2 left-2 flex gap-3 text-[10px] font-mono bg-slate-950/90 px-1.5 py-0.5 rounded border border-slate-800 z-10">
+                    <div class="bg-slate-950 rounded border border-slate-850 p-1.5 h-24 relative">
+                        <div class="absolute top-1 left-1 flex gap-2 text-[9px] font-mono bg-slate-950/80 px-1 rounded z-10">
                             <span class="text-green-400">— Leistung</span>
                             <span class="text-cyan-400">— Temp</span>
                         </div>
@@ -282,33 +275,25 @@
                 </div>
             </div>
 
-            <!-- Kurze interaktive Bedienungsanleitung -->
-            <div class="bg-slate-900/60 border border-slate-800 rounded-xl p-5 flex flex-col gap-3 backdrop-blur flex-1">
-                <h3 class="text-sm font-bold text-white uppercase tracking-wider flex items-center gap-2">
-                    <i data-lucide="book-open" class="w-4 h-4 text-indigo-400"></i> Leitfaden für Ingenieure
+            <div class="bg-slate-900/60 border border-slate-800 rounded-lg p-3.5 backdrop-blur flex-shrink-0 mt-auto">
+                <h3 class="text-[11px] font-bold text-white uppercase flex items-center gap-1.5 mb-2">
+                    <i data-lucide="book-open" class="w-3.5 h-3.5 text-indigo-400"></i> Leitfaden
                 </h3>
-                <div class="text-sm text-slate-400 space-y-3 overflow-y-auto max-h-[220px] pr-1">
-                    <p>
-                        <strong>Ziel:</strong> Regele den Reaktor stabil im Nennbereich oder überlaste ihn gezielt bis zum Limit.
-                    </p>
-                    <p>
-                        <strong>Xenon-Effekt (Xe-135):</strong> Hohe Spaltraten erzeugen kontinuierlich Iod-135, welches zeitverzögert in Xenon-135 zerfällt. Xenon blockiert die Kettenreaktion extrem stark. Fährst du die Leistung abrupt herunter, sorgt der Xenon-Peak dafür, dass der Reaktor für einige Stunden nicht wieder gestartet werden kann (nukleare Vergiftung).
-                    </p>
-                    <div class="bg-slate-950 p-2 rounded border border-slate-850 text-slate-500 leading-normal text-xs">
-                        <strong>Hinweis:</strong> Bei maximalem Nachladetempo ($15{,}0\times$) regeneriert sich der Brennstoff extrem rasant. Reduzierst du zeitgleich das Kühlmittel, schmilzt der Core unweigerlich dahin.
-                    </div>
+                <div class="text-[11px] text-slate-400 space-y-2 leading-relaxed">
+                    <p>Zünde die Quelle, aktiviere Auto-Refuel und ziehe die Steuerstäbe heraus.</p>
+                    <p>Behalte <span class="text-yellow-400 font-mono">k-eff</span> (Kritikalität) und den Xenon-Wert (Neutronengift) im Auge.</p>
                 </div>
             </div>
-        </section>
 
+        </section>
     </main>
 
-    <!-- NEU: Einstellungs-Modal für physikalische Kernparameter -->
-    <div id="settingsModal" class="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center hidden">
-        <div class="bg-slate-900 border border-slate-800 rounded-xl p-6 max-w-2xl w-full mx-4 shadow-2xl max-h-[90vh] overflow-y-auto flex flex-col">
+    <!-- Einstellungs-Modal für physikalische Kernparameter -->
+    <div id="settingsModal" class="fixed inset-0 bg-black/80 backdrop-blur-sm z-[100] flex items-center justify-center hidden">
+        <div class="bg-slate-900 border border-slate-800 rounded-xl p-5 max-w-2xl w-full mx-4 shadow-2xl max-h-[90vh] overflow-y-auto flex flex-col">
             <div class="flex justify-between items-center border-b border-slate-800 pb-3 mb-4">
-                <h3 class="text-lg font-bold text-white flex items-center gap-2">
-                    <i data-lucide="settings" class="text-blue-400 w-5 h-5 animate-spin"></i> Physikalische Kernparameter manipulieren
+                <h3 class="text-base font-bold text-white flex items-center gap-2">
+                    <i data-lucide="settings" class="text-blue-400 w-4 h-4 animate-spin"></i> Kernphysik konfigurieren
                 </h3>
                 <button id="closeSettingsBtn" class="text-slate-400 hover:text-white p-1 hover:bg-slate-800 rounded">
                     <i data-lucide="x" class="w-5 h-5"></i>
@@ -316,158 +301,80 @@
             </div>
 
             <!-- Modal Content - Sliders -->
-            <div class="space-y-5 flex-1 overflow-y-auto pr-1">
-                <p class="text-sm text-slate-400 leading-relaxed mb-4">
-                    Hier kannst du direkt an den mathematischen Zahnrädern der Kernphysik schrauben. Verändere die Werte live, um ein stabileres oder dramatischeres Verhalten zu erzwingen.
-                </p>
-
-                <!-- Gruppe 1: Neutronenproduktion -->
-                <div class="bg-slate-950/60 p-4 rounded-lg border border-slate-850 space-y-4">
-                    <h4 class="text-xs font-bold text-slate-400 uppercase tracking-widest border-b border-slate-850 pb-1 flex justify-between">
-                        <span>Neutronenproduktion & Ausbeute</span>
-                        <i data-lucide="history" class="w-3.5 h-3.5"></i>
-                    </h4>
-                    <!-- Slider: promptChance2 -->
+            <div class="space-y-4 flex-1 overflow-y-auto pr-1">
+                <!-- Gruppe 1 -->
+                <div class="bg-slate-950/60 p-3 rounded border border-slate-850 space-y-3">
+                    <h4 class="text-[10px] font-bold text-slate-400 uppercase border-b border-slate-850 pb-1">Neutronenproduktion</h4>
                     <div class="space-y-1">
-                        <div class="flex justify-between text-sm">
-                            <label class="text-slate-300">Wahrscheinlichkeit für 2. promptes Neutron</label>
-                            <span id="promptChance2Val" class="font-mono text-blue-400">85%</span>
-                        </div>
-                        <input type="range" id="param_promptChance2" min="0" max="100" value="85" class="w-full h-1.5 bg-slate-800 rounded appearance-none cursor-pointer">
-                        <p class="text-[10px] text-slate-500">Gibt an, wie oft bei einer Spaltung ein direktes zweites Neutron entsteht.</p>
+                        <div class="flex justify-between text-xs"><label class="text-slate-300">Chance: 2. promptes Neutron</label><span id="promptChance2Val" class="font-mono text-blue-400">85%</span></div>
+                        <input type="range" id="param_promptChance2" min="0" max="100" value="85" class="w-full h-1 bg-slate-800 rounded appearance-none cursor-pointer">
                     </div>
-                    <!-- Slider: promptChance3 -->
                     <div class="space-y-1">
-                        <div class="flex justify-between text-sm">
-                            <label class="text-slate-300">Wahrscheinlichkeit für 3. promptes Neutron</label>
-                            <span id="promptChance3Val" class="font-mono text-blue-400">20%</span>
-                        </div>
-                        <input type="range" id="param_promptChance3" min="0" max="100" value="20" class="w-full h-1.5 bg-slate-800 rounded appearance-none cursor-pointer">
-                        <p class="text-[10px] text-slate-500">Macht Reaktionen bei extremem Abbrand unkontrollierbar.</p>
+                        <div class="flex justify-between text-xs"><label class="text-slate-300">Chance: 3. promptes Neutron</label><span id="promptChance3Val" class="font-mono text-blue-400">20%</span></div>
+                        <input type="range" id="param_promptChance3" min="0" max="100" value="20" class="w-full h-1 bg-slate-800 rounded appearance-none cursor-pointer">
                     </div>
-                    <!-- Slider: delayedChance -->
                     <div class="space-y-1">
-                        <div class="flex justify-between text-sm">
-                            <label class="text-slate-300">Anteil verzögerter Neutronen</label>
-                            <span id="delayedChanceVal" class="font-mono text-blue-400">15%</span>
-                        </div>
-                        <input type="range" id="param_delayedChance" min="0" max="50" value="15" class="w-full h-1.5 bg-slate-800 rounded appearance-none cursor-pointer">
-                        <p class="text-[10px] text-slate-500">Wichtig für die zeitliche Regelbarkeit. Verlangsamt das Durchgehen.</p>
+                        <div class="flex justify-between text-xs"><label class="text-slate-300">Anteil verzögerter Neutronen</label><span id="delayedChanceVal" class="font-mono text-blue-400">15%</span></div>
+                        <input type="range" id="param_delayedChance" min="0" max="50" value="15" class="w-full h-1 bg-slate-800 rounded appearance-none cursor-pointer">
                     </div>
                 </div>
-
-                <!-- Gruppe 2: Wirkungsquerschnitte -->
-                <div class="bg-slate-950/60 p-4 rounded-lg border border-slate-850 space-y-4">
-                    <h4 class="text-xs font-bold text-slate-400 uppercase tracking-widest border-b border-slate-850 pb-1 flex justify-between">
-                        <span>Einfangquerschnitte & Wirkungen</span>
-                        <i data-lucide="shield" class="w-3.5 h-3.5"></i>
-                    </h4>
-                    <!-- Slider: fissionChanceThermal -->
-                    <div class="space-y-1">
-                        <div class="flex justify-between text-sm">
-                            <label class="text-slate-300">Spaltungschance (Thermisierte n°)</label>
-                            <span id="fissionChanceThermalVal" class="font-mono text-blue-400">92%</span>
+                <!-- Gruppe 2 & 3 gekürzt für Platz -->
+                <div class="grid grid-cols-2 gap-4">
+                    <div class="bg-slate-950/60 p-3 rounded border border-slate-850 space-y-3">
+                        <h4 class="text-[10px] font-bold text-slate-400 uppercase border-b border-slate-850 pb-1">Wirkungsquerschnitte</h4>
+                        <div class="space-y-1">
+                            <div class="flex justify-between text-xs"><label class="text-slate-300">Spaltung (Thermisch)</label><span id="fissionChanceThermalVal" class="font-mono text-blue-400">92%</span></div>
+                            <input type="range" id="param_fissionChanceThermal" min="10" max="100" value="92" class="w-full h-1 bg-slate-800 rounded appearance-none cursor-pointer">
                         </div>
-                        <input type="range" id="param_fissionChanceThermal" min="10" max="100" value="92" class="w-full h-1.5 bg-slate-800 rounded appearance-none cursor-pointer">
-                        <p class="text-[10px] text-slate-500">Spaltwahrscheinlichkeit eines Atoms bei Kollision mit langsamen Neutronen.</p>
+                        <div class="space-y-1">
+                            <div class="flex justify-between text-xs"><label class="text-slate-300">Spaltung (Schnell)</label><span id="fissionChanceFastVal" class="font-mono text-blue-400">12%</span></div>
+                            <input type="range" id="param_fissionChanceFast" min="0" max="50" value="12" class="w-full h-1 bg-slate-800 rounded appearance-none cursor-pointer">
+                        </div>
                     </div>
-                    <!-- Slider: fissionChanceFast -->
-                    <div class="space-y-1">
-                        <div class="flex justify-between text-sm">
-                            <label class="text-slate-300">Spaltungschance (Schnelle n°)</label>
-                            <span id="fissionChanceFastVal" class="font-mono text-blue-400">12%</span>
+                    <div class="bg-slate-950/60 p-3 rounded border border-slate-850 space-y-3">
+                        <h4 class="text-[10px] font-bold text-slate-400 uppercase border-b border-slate-850 pb-1">Geometrie & Energie</h4>
+                        <div class="space-y-1">
+                            <div class="flex justify-between text-xs"><label class="text-slate-300">Reflektor-Effizienz</label><span id="wallReflectivityVal" class="font-mono text-blue-400">93%</span></div>
+                            <input type="range" id="param_wallReflectivity" min="50" max="100" value="93" class="w-full h-1 bg-slate-800 rounded appearance-none cursor-pointer">
                         </div>
-                        <input type="range" id="param_fissionChanceFast" min="0" max="50" value="12" class="w-full h-1.5 bg-slate-800 rounded appearance-none cursor-pointer">
-                        <p class="text-[10px] text-slate-500">Wahrscheinlichkeit, dass ein unmoderiertes, schnelles Teilchen spaltet.</p>
-                    </div>
-                </div>
-
-                <!-- Gruppe 3: Reflektor & Quelle -->
-                <div class="bg-slate-950/60 p-4 rounded-lg border border-slate-850 space-y-4">
-                    <h4 class="text-xs font-bold text-slate-400 uppercase tracking-widest border-b border-slate-850 pb-1 flex justify-between">
-                        <span>Geometrie & Leckage-Modifikatoren</span>
-                        <i data-lucide="waves" class="w-3.5 h-3.5"></i>
-                    </h4>
-                    <!-- Slider: wallReflectivity -->
-                    <div class="space-y-1">
-                        <div class="flex justify-between text-sm">
-                            <label class="text-slate-300">Beryllium-Reflektor-Effizienz</label>
-                            <span id="wallReflectivityVal" class="font-mono text-blue-400">93%</span>
+                        <div class="space-y-1">
+                            <div class="flex justify-between text-xs"><label class="text-slate-300">Temp-Koeffizient (Dämpfung)</label><span id="tempCoefficientVal" class="font-mono text-blue-400">2200</span></div>
+                            <input type="range" id="param_tempCoefficient" min="500" max="3500" step="50" value="2200" class="w-full h-1 bg-slate-800 rounded appearance-none cursor-pointer">
                         </div>
-                        <input type="range" id="param_wallReflectivity" min="50" max="100" value="93" class="w-full h-1.5 bg-slate-800 rounded appearance-none cursor-pointer">
-                        <p class="text-[10px] text-slate-500">Wie viele Neutronen beim Kontakt mit den Außenwänden zurückgeworfen werden.</p>
-                    </div>
-                    <!-- Slider: backgroundSource -->
-                    <div class="space-y-1">
-                        <div class="flex justify-between text-sm">
-                            <label class="text-slate-300">Spontane Hintergrundstrahlung</label>
-                            <span id="backgroundSourceVal" class="font-mono text-blue-400">0.15 Hz</span>
-                        </div>
-                        <input type="range" id="param_backgroundSource" min="1" max="50" value="15" class="w-full h-1.5 bg-slate-800 rounded appearance-none cursor-pointer">
-                        <p class="text-[10px] text-slate-500">Häufigkeit, mit der im Leerlauf spontan zerfallende Neutronen injiziert werden.</p>
-                    </div>
-                </div>
-
-                <!-- Gruppe 4: Feedback & Energie -->
-                <div class="bg-slate-950/60 p-4 rounded-lg border border-slate-850 space-y-4">
-                    <h4 class="text-xs font-bold text-slate-400 uppercase tracking-widest border-b border-slate-850 pb-1 flex justify-between">
-                        <span>Thermodynamik & Energiebilanz</span>
-                        <i data-lucide="gauge" class="w-3.5 h-3.5"></i>
-                    </h4>
-                    <!-- Slider: tempCoefficient -->
-                    <div class="space-y-1">
-                        <div class="flex justify-between text-sm">
-                            <label class="text-slate-300">Dämpfungs-Intensität (Temperatur-Feedback)</label>
-                            <span id="tempCoefficientVal" class="font-mono text-blue-400">2200</span>
-                        </div>
-                        <input type="range" id="param_tempCoefficient" min="500" max="3500" step="50" value="2200" class="w-full h-1.5 bg-slate-800 rounded appearance-none cursor-pointer">
-                        <p class="text-[10px] text-slate-500">Niedrigere Werte dämpfen die Moderation bei Hitze radikaler (extrem stabiler Schutz).</p>
-                    </div>
-                    <!-- Slider: fissionEnergy -->
-                    <div class="space-y-1">
-                        <div class="flex justify-between text-sm">
-                            <label class="text-slate-300">Wärmeenergie pro Fission</label>
-                            <span id="fissionEnergyVal" class="font-mono text-blue-400">680</span>
-                        </div>
-                        <input type="range" id="param_fissionEnergy" min="100" max="2500" step="10" value="680" class="w-full h-1.5 bg-slate-800 rounded appearance-none cursor-pointer">
-                        <p class="text-[10px] text-slate-500">Bestimmt die direkte thermische Wärme-Ausbeute im Reaktorwasser je Ereignis.</p>
                     </div>
                 </div>
             </div>
 
             <!-- Footer im Modal -->
-            <div class="flex justify-between items-center border-t border-slate-800 pt-4 mt-4">
-                <button id="resetDefaultsBtn" class="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white rounded text-sm transition-all">
-                    Standardwerte herstellen
+            <div class="flex justify-between items-center border-t border-slate-800 pt-3 mt-3">
+                <button id="resetDefaultsBtn" class="px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded text-xs transition-all">
+                    Standardwerte
                 </button>
-                <button id="applyCloseBtn" class="px-5 py-2 bg-blue-600 hover:bg-blue-500 text-white rounded font-medium text-sm transition-all shadow">
+                <button id="applyCloseBtn" class="px-4 py-1.5 bg-blue-600 hover:bg-blue-500 text-white rounded font-medium text-xs shadow">
                     Übernehmen & Schließen
                 </button>
             </div>
         </div>
     </div>
 
-    <!-- Footer mit Status-Details -->
-    <footer class="border-t border-slate-800 bg-slate-950 px-6 py-3 text-center text-xs text-slate-500 flex flex-wrap justify-between gap-4">
-        <p>© 2026 etechnik3r development — Zu Forschungs- und Schulungszwecken</p>
-        <p class="font-mono">Sensorik-Status: <span class="text-emerald-500">Normal</span> | Energiebilanz: <span id="totalEnergyText" class="text-slate-300">0.00 GWh</span> gesamt generiert</p>
+    <!-- Footer -->
+    <footer class="border-t border-slate-800 bg-slate-950 px-4 py-1.5 text-center text-[10px] text-slate-500 flex justify-between shrink-0">
+        <p>© 2026 etechnik3r development</p>
+        <p class="font-mono">Energiebilanz: <span id="totalEnergyText" class="text-slate-300">0.00 GWh</span></p>
     </footer>
 
-    <!-- Simulations- und Physikskripte -->
     <script>
-        // --- INITIALISIERUNG & SETUP ---
+        // --- INITIALISIERUNG ---
         const canvas = document.getElementById('coreCanvas');
         const ctx = canvas.getContext('2d');
         const chartCanvas = document.getElementById('chartCanvas');
         const chartCtx = chartCanvas.getContext('2d');
 
-        // Parameter-Inputs
         const controlRodsSlider = document.getElementById('controlRods');
         const moderatorSlider = document.getElementById('moderator');
         const coolantSlider = document.getElementById('coolant');
         const refuelSpeedSlider = document.getElementById('refuelSpeed');
 
-        // Text/Metric Displays
         const rodValDisplay = document.getElementById('rodValDisplay');
         const modValDisplay = document.getElementById('modValDisplay');
         const coolantValDisplay = document.getElementById('coolantValDisplay');
@@ -485,10 +392,8 @@
         const tempText = document.getElementById('tempText');
         const tempBar = document.getElementById('tempBar');
         const tempIndicator = document.getElementById('tempIndicator');
-
         const totalEnergyText = document.getElementById('totalEnergyText');
 
-        // Buttons & Automatik-Elemente
         const scramBtn = document.getElementById('scramBtn');
         const refuelBtn = document.getElementById('refuelBtn');
         const autoRefuelBtn = document.getElementById('autoRefuelBtn');
@@ -507,51 +412,45 @@
         const applyCloseBtn = document.getElementById('applyCloseBtn');
         const resetDefaultsBtn = document.getElementById('resetDefaultsBtn');
 
-        // --- GLOBAL CONFIGURABLE PHYSICS OBJECT ---
-        // Optimierte Standardparameter zur Lösung der Blockade der Kettenreaktion
+        // --- PHYSIK DEFAULTS ---
         const PHYSICS_DEFAULTS = {
-            fissionEnergy: 680,       // Wärme-Ausbeute pro Spaltung (MW-Äquivalent)
-            backgroundSource: 0.15,   // Erhöhte Frequenz spontaner Neutronen für sicheres Zünden (15%)
-            minNeutronsStarthilfe: 15, // Bei wie vielen Neutronen die Starthilfe anspringt
-            wallReflectivity: 0.93,   // Beryllium-Reflektor hocheffizient (93%), hält Neutronen im Core
-            
-            promptChance2: 0.85,      // Wahrscheinlichkeit für 2. promptes Neutron (85%) - Schafft echte Vervielfachung!
-            promptChance3: 0.20,      // Wahrscheinlichkeit für 3. promptes Neutron (20%) - Lässt Reaktion spürbar wachsen
-            delayedChance: 0.15,      // Anteil verzögerter Neutronen
-            delayedDelayMin: 500,     // Minimale Verzögerung (ms)
-            delayedDelayMax: 1800,    // Maximale Verzögerung (ms)
-
-            fissionChanceThermal: 0.92, // Spaltungschance bei langsamen Neutronen
-            fissionChanceFast: 0.12,    // Spaltungschance bei unmoderierten, schnellen Neutronen (erhöht auf 12%)
-            moderatorRate: 0.14,        // Optimiertes Moderationstempo (14%) für spürbare Thermalisierung
-
-            tempCoefficient: 2200,      // Faktor des negativen Temperaturkoeffizienten (höhere Toleranz gegen verfrühtes Abwürgen)
-            coolantCapacity: 0.8,       // Effizienz des Kühlkreislaufs
-            basePowerScale: 0.08,       // Skalierung der Leistungsberechnung
-            xenonAbsorption: 0.005,     // DEUTLICH REDUZIERT: Verhindert das "Schwarze Loch" für Neutronen
-            xenonYield: 0.008           // Angepasster Iod-Ertrag pro Fissionspuls
+            fissionEnergy: 680,
+            backgroundSource: 0.15,
+            minNeutronsStarthilfe: 15,
+            wallReflectivity: 0.93,
+            promptChance2: 0.85,
+            promptChance3: 0.20,
+            delayedChance: 0.15,
+            delayedDelayMin: 500,
+            delayedDelayMax: 1800,
+            fissionChanceThermal: 0.92,
+            fissionChanceFast: 0.12,
+            moderatorRate: 0.14,
+            tempCoefficient: 2200,
+            coolantCapacity: 0.8,
+            basePowerScale: 0.08,
+            xenonAbsorption: 0.005,
+            xenonYield: 0.008
         };
-
-        // Das aktive Physik-Objekt kopieren
         let PHYSICS = { ...PHYSICS_DEFAULTS };
 
-        // --- WEB AUDIO SYNTHESIZER ---
+        // --- WEB AUDIO ---
         let audioCtx = null;
-        let isMuted = false;
+        let isMuted = false; // Audio standardmäßig AN gewünscht
         let humOscillator = null;
         let humGainNode = null;
+        let audioInitialized = false;
 
         function initAudio() {
-            if (audioCtx) return;
+            if (audioInitialized) return;
             try {
                 const AudioContextClass = window.AudioContext || window.webkitAudioContext;
                 audioCtx = new AudioContextClass();
 
                 humOscillator = audioCtx.createOscillator();
                 humGainNode = audioCtx.createGain();
-                
                 humOscillator.type = 'sawtooth';
-                humOscillator.frequency.value = 55; // Tiefer Ton
+                humOscillator.frequency.value = 55;
                 
                 const lowpass = audioCtx.createBiquadFilter();
                 lowpass.type = 'lowpass';
@@ -561,27 +460,33 @@
                 lowpass.connect(humGainNode);
                 humGainNode.connect(audioCtx.destination);
                 
-                humGainNode.gain.value = 0.01;
+                // Da default AN ist, starten wir das Brummen (sehr leise)
+                humGainNode.gain.value = isMuted ? 0 : 0.01;
                 humOscillator.start(0);
+                
+                audioInitialized = true;
             } catch (e) {
-                console.warn("Audio Context konnte nicht initialisiert werden: ", e);
+                console.warn("Audio Context init failed: ", e);
             }
         }
 
+        // Auto-Start Audio auf ersten Klick irgendwo
+        document.body.addEventListener('click', () => {
+            if (!audioInitialized) {
+                initAudio();
+                if (audioCtx && audioCtx.state === 'suspended') audioCtx.resume();
+            }
+        }, { once: true });
+
         function playGeigerClick() {
-            if (!audioCtx || isMuted || audioCtx.state === 'suspended') return;
-            
+            if (!audioInitialized || isMuted || audioCtx.state === 'suspended') return;
             const bufferSize = audioCtx.sampleRate * 0.005;
             const buffer = audioCtx.createBuffer(1, bufferSize, audioCtx.sampleRate);
             const data = buffer.getChannelData(0);
-            
-            for (let i = 0; i < bufferSize; i++) {
-                data[i] = Math.random() * 2 - 1;
-            }
+            for (let i = 0; i < bufferSize; i++) data[i] = Math.random() * 2 - 1;
             
             const noise = audioCtx.createBufferSource();
             noise.buffer = buffer;
-
             const filter = audioCtx.createBiquadFilter();
             filter.type = 'bandpass';
             filter.frequency.value = 1000;
@@ -589,26 +494,21 @@
 
             noise.connect(filter);
             filter.connect(audioCtx.destination);
-            
             noise.start();
         }
 
         let alarmInterval = null;
         function startAlarmSound() {
-            if (!audioCtx || isMuted || alarmInterval) return;
-            
+            if (!audioInitialized || isMuted || alarmInterval) return;
             alarmInterval = setInterval(() => {
                 if (isMuted) return;
                 const osc = audioCtx.createOscillator();
                 const gain = audioCtx.createGain();
-                
                 osc.type = 'sine';
                 osc.frequency.setValueAtTime(800, audioCtx.currentTime);
                 osc.frequency.linearRampToValueAtTime(1200, audioCtx.currentTime + 0.4);
-                
                 gain.gain.setValueAtTime(0.05, audioCtx.currentTime);
                 gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.4);
-                
                 osc.connect(gain);
                 gain.connect(audioCtx.destination);
                 osc.start();
@@ -623,8 +523,9 @@
             }
         }
 
-        soundToggle.addEventListener('click', () => {
-            initAudio();
+        soundToggle.addEventListener('click', (e) => {
+            e.stopPropagation(); // Verhindert globales Click-Event
+            if (!audioInitialized) initAudio();
             isMuted = !isMuted;
             if (isMuted) {
                 soundIcon.setAttribute('data-lucide', 'volume-x');
@@ -632,182 +533,95 @@
             } else {
                 soundIcon.setAttribute('data-lucide', 'volume-2');
                 if (humGainNode) humGainNode.gain.value = 0.01;
-                if (audioCtx && audioCtx.state === 'suspended') {
-                    audioCtx.resume();
-                }
+                if (audioCtx && audioCtx.state === 'suspended') audioCtx.resume();
             }
             lucide.createIcons();
         });
 
-        // --- PHYSIKALISCHE SIMULATIONSEINSTELLUNGEN ---
         const REACTOR = {
-            // Skaliertes, perfekt zentrierbares Gitter (18x26 = 468 Atome)
-            rows: 18,
-            cols: 26,
-            atoms: [],
-            neutrons: [],
-            delayedNeutronQueue: [], // Queue für verzögerte Spaltneutronen
-            controlRods: 4, // Anzahl der Steuerstäbe im Core
-            
-            // Thermodynamik & Zustände
-            power: 0,         // Thermische Leistung (MW)
-            temperature: 150, // Kerntemperatur (°C) (Basis: 150°C)
-            energyGenerated: 0, // Akkumulierte Energie in GWh
-            
-            // Xenon-Vergiftung (Physikalischer Zustand)
-            iodine: 0.0,      // Iod-135 Konzentration
-            xenon: 0.0,       // Xenon-135 Konzentration (Extremer Absorber)
-            
-            // Betriebseinstellungen (Auto-Refuel standardmäßig an!)
-            autoRefuel: true, 
-            isMeltdown: false,
-            scramActive: false,
-            
-            // Historie für Diagramm
-            history: [],
-            maxHistorySize: 150
+            rows: 18, cols: 26,
+            atoms: [], neutrons: [], delayedNeutronQueue: [],
+            controlRods: 4,
+            power: 0, temperature: 150, energyGenerated: 0,
+            iodine: 0.0, xenon: 0.0,
+            autoRefuel: true, // Standardmäßig aktiv!
+            isMeltdown: false, scramActive: false,
+            history: [], maxHistorySize: 150
         };
 
-        // Uran-235 Atom Struktur
         class UranAtom {
             constructor(x, y, row, col) {
-                this.x = x;
-                this.y = y;
-                this.row = row;
-                this.col = col;
-                this.status = 'intact'; // 'intact', 'fissioned', 'melted'
-                this.size = 5.2; // Optimal berechnete optische Kerngröße
-                this.energyPulse = 0;
+                this.x = x; this.y = y; this.row = row; this.col = col;
+                this.status = 'intact'; this.size = 5.2; this.energyPulse = 0;
             }
-
             draw() {
                 if (this.status === 'intact') {
                     const grad = ctx.createRadialGradient(this.x, this.y, 1, this.x, this.y, this.size);
-                    grad.addColorStop(0, '#34d399');
-                    grad.addColorStop(0.7, '#059669');
-                    grad.addColorStop(1, 'rgba(5, 150, 105, 0.05)');
-                    
+                    grad.addColorStop(0, '#34d399'); grad.addColorStop(0.7, '#059669'); grad.addColorStop(1, 'rgba(5, 150, 105, 0.05)');
                     ctx.beginPath();
                     ctx.arc(this.x, this.y, this.size + this.energyPulse * 8, 0, Math.PI * 2);
                     ctx.fillStyle = this.energyPulse > 0 ? `rgba(255, 255, 255, ${this.energyPulse})` : grad;
                     ctx.fill();
-
                     ctx.beginPath();
                     ctx.arc(this.x, this.y, 1.2, 0, Math.PI * 2);
                     ctx.fillStyle = '#ffffff';
                     ctx.fill();
-
                 } else if (this.status === 'fissioned') {
                     ctx.beginPath();
                     ctx.arc(this.x - 2.0, this.y + 1, 2.0, 0, Math.PI * 2);
                     ctx.arc(this.x + 2.0, this.y - 1, 1.8, 0, Math.PI * 2);
                     ctx.fillStyle = '#475569';
                     ctx.fill();
-
-                    ctx.strokeStyle = '#334155';
-                    ctx.lineWidth = 0.5;
-                    ctx.beginPath();
-                    ctx.moveTo(this.x - 2.0, this.y + 1);
-                    ctx.lineTo(this.x + 2.0, this.y - 1);
-                    ctx.stroke();
                 } else if (this.status === 'melted') {
                     ctx.beginPath();
                     ctx.arc(this.x, this.y, this.size * 1.3, 0, Math.PI * 2);
                     ctx.fillStyle = 'rgba(239, 68, 68, 0.12)';
                     ctx.fill();
-                    
                     ctx.beginPath();
                     ctx.arc(this.x + Math.sin(Date.now()*0.015 + this.x)*1, this.y + Math.cos(Date.now()*0.015 + this.y)*1, 2.8, 0, Math.PI * 2);
                     ctx.fillStyle = '#ef4444';
                     ctx.fill();
                 }
-
-                if (this.energyPulse > 0) {
-                    this.energyPulse -= 0.05;
-                    if (this.energyPulse < 0) this.energyPulse = 0;
-                }
+                if (this.energyPulse > 0) this.energyPulse = Math.max(0, this.energyPulse - 0.05);
             }
         }
 
-        // Neutronen-Teilchen Struktur mit weiten Schweifen
         class Neutron {
             constructor(x, y, isThermal = false, isDelayed = false) {
-                this.x = x;
-                this.y = y;
-                this.isThermal = isThermal;
-                this.isDelayed = isDelayed; 
-                this.history = []; // Zeichnet einen Neutronen-Schweif
-                
+                this.x = x; this.y = y; this.isThermal = isThermal; this.isDelayed = isDelayed; 
+                this.history = [];
                 const angle = Math.random() * Math.PI * 2;
-                // Geschwindigkeiten erhöht für ansprechend weite Flugkurven
                 this.speed = this.isThermal ? 1.8 : (this.isDelayed ? 2.5 : 5.5);
                 this.vx = Math.cos(angle) * this.speed;
                 this.vy = Math.sin(angle) * this.speed;
-                
-                this.life = 1.0;
             }
-
             update() {
-                // Historie für flüssige Bewegungsbahnen mitschreiben
                 this.history.push({ x: this.x, y: this.y });
-                if (this.history.length > 6) {
-                    this.history.shift();
-                }
+                if (this.history.length > 6) this.history.shift();
             }
-
             draw() {
-                // Schweif rendern
                 if (this.history.length > 1) {
                     ctx.beginPath();
                     ctx.moveTo(this.history[0].x, this.history[0].y);
-                    for (let p of this.history) {
-                        ctx.lineTo(p.x, p.y);
-                    }
-                    if (this.isThermal) {
-                        ctx.strokeStyle = 'rgba(248, 113, 113, 0.3)';
-                    } else if (this.isDelayed) {
-                        ctx.strokeStyle = 'rgba(251, 191, 36, 0.35)';
-                    } else {
-                        ctx.strokeStyle = 'rgba(96, 165, 250, 0.25)';
-                    }
+                    for (let p of this.history) ctx.lineTo(p.x, p.y);
+                    ctx.strokeStyle = this.isThermal ? 'rgba(248, 113, 113, 0.3)' : (this.isDelayed ? 'rgba(251, 191, 36, 0.35)' : 'rgba(96, 165, 250, 0.25)');
                     ctx.lineWidth = 1.5;
                     ctx.stroke();
                 }
-
                 ctx.beginPath();
                 ctx.arc(this.x, this.y, this.isThermal ? 3.2 : 2.5, 0, Math.PI * 2);
-                
-                if (this.isThermal) {
-                    ctx.fillStyle = '#f87171';
-                    ctx.shadowColor = '#ef4444';
-                    ctx.shadowBlur = 4;
-                } else if (this.isDelayed) {
-                    ctx.fillStyle = '#fbbf24';
-                    ctx.shadowColor = '#f59e0b';
-                    ctx.shadowBlur = 5;
-                } else {
-                    ctx.fillStyle = '#60a5fa';
-                    ctx.shadowColor = '#3b82f6';
-                    ctx.shadowBlur = 3;
-                }
+                ctx.fillStyle = this.isThermal ? '#f87171' : (this.isDelayed ? '#fbbf24' : '#60a5fa');
                 ctx.fill();
-                ctx.shadowBlur = 0;
             }
         }
 
-        // --- CORE GRID PROPORTIONAL AUFBAUEN ---
-        let gridLeft = 0;
-        let gridTop = 0;
-        let gridWidth = 0;
-        let gridHeight = 0;
-        let atomSpacing = 0;
+        let gridLeft = 0, gridTop = 0, gridWidth = 0, gridHeight = 0, atomSpacing = 0;
 
         function resizeCanvas() {
             const rect = canvas.getBoundingClientRect();
             canvas.width = rect.width * window.devicePixelRatio;
             canvas.height = rect.height * window.devicePixelRatio;
             ctx.scale(window.devicePixelRatio, window.devicePixelRatio);
-            
             initGrid();
         }
 
@@ -815,89 +629,55 @@
             REACTOR.atoms = [];
             const w = canvas.width / window.devicePixelRatio;
             const h = canvas.height / window.devicePixelRatio;
-            
-            // Minimierte Ränder für maximale Platzausnutzung im Dashboard
             const paddingX = w * 0.03;
-            const paddingY = h * 0.06;
+            const paddingY = h * 0.05;
             
-            // Berechnung des proportionalen Gitters
-            atomSpacing = Math.min(
-                (w - paddingX * 2) / (REACTOR.cols - 1),
-                (h - paddingY * 2) / (REACTOR.rows - 1)
-            );
-            
+            atomSpacing = Math.min((w - paddingX * 2) / (REACTOR.cols - 1), (h - paddingY * 2) / (REACTOR.rows - 1));
             gridWidth = atomSpacing * (REACTOR.cols - 1);
             gridHeight = atomSpacing * (REACTOR.rows - 1);
-            
-            // Reaktor zentrieren
             gridLeft = (w - gridWidth) / 2;
-            gridTop = (h - gridHeight) / 2 + 10; 
+            gridTop = (h - gridHeight) / 2 + 5; 
 
             for (let r = 0; r < REACTOR.rows; r++) {
                 for (let c = 0; c < REACTOR.cols; c++) {
-                    const x = gridLeft + c * atomSpacing;
-                    const y = gridTop + r * atomSpacing;
-                    REACTOR.atoms.push(new UranAtom(x, y, r, c));
+                    REACTOR.atoms.push(new UranAtom(gridLeft + c * atomSpacing, gridTop + r * atomSpacing, r, c));
                 }
             }
         }
 
-        // --- PHYSIKALISCHE SIMULATIONSEINSTELLUNGEN ---
         let rawPowerMeasure = 0;
 
         function updateSimulation() {
             if (REACTOR.isMeltdown) return;
 
-            const w = canvas.width / window.devicePixelRatio;
-            const h = canvas.height / window.devicePixelRatio;
-
-            // Parameterwerte einlesen
             const rodInsertion = parseFloat(controlRodsSlider.value) / 100;
             const baseModEfficiency = parseFloat(moderatorSlider.value) / 100;
             const coolantFlow = parseFloat(coolantSlider.value) / 100;
             const refuelSpeedMult = parseFloat(refuelSpeedSlider.value);
 
-            // Displays updaten
             rodValDisplay.innerText = `${Math.round(rodInsertion * 100)}%`;
             modValDisplay.innerText = `${Math.round(baseModEfficiency * 100)}%`;
             coolantValDisplay.innerText = `${Math.round(coolantFlow * 100)}%`;
             refuelSpeedValDisplay.innerText = `${refuelSpeedMult.toFixed(1)}x`;
 
-            // --- THERMISCHES FEEDBACK (Negativer Koeffizient) ---
             const tempFactor = Math.max(0.12, 1 - Math.max(0, (REACTOR.temperature - 150) / PHYSICS.tempCoefficient));
             const activeModeratorEfficiency = baseModEfficiency * tempFactor;
 
-            // --- XENON & IOD ZERFALL ---
-            const iodineDecayRate = 0.0012;
-            const decayedIodine = REACTOR.iodine * iodineDecayRate;
+            const decayedIodine = REACTOR.iodine * 0.0012;
             REACTOR.iodine = Math.max(0, REACTOR.iodine - decayedIodine);
-            
-            // Xenon wächst, wird aber auf max 25 limitiert (Gleichgewichtsgift, kein unendliches Schwarzes Loch)
             REACTOR.xenon = Math.min(25.0, Math.max(0, REACTOR.xenon + decayedIodine));
-
-            const xenonDecayRate = 0.0006;
-            REACTOR.xenon = Math.max(0, REACTOR.xenon * (1 - xenonDecayRate));
+            REACTOR.xenon = Math.max(0, REACTOR.xenon * (1 - 0.0006));
             xenonValDisplay.innerText = `${(REACTOR.xenon * 10).toFixed(1)}%`;
 
-            // --- AUTOMATISCHES NACHFÜLLEN (DYNAMISCH) ---
             if (REACTOR.autoRefuel) {
                 const fissionedAtoms = REACTOR.atoms.filter(a => a.status === 'fissioned');
                 if (fissionedAtoms.length > 0) {
-                    const depletionRatio = fissionedAtoms.length / REACTOR.atoms.length;
-                    const baseRefuelChance = 0.035; 
-                    // Angehoben von 0.18 auf 0.45, damit man bei extremer Überlast noch grüne Atome aufblitzen sieht
-                    const dynamicChance = (baseRefuelChance + (depletionRatio * 0.45)) * refuelSpeedMult;
-
-                    let refuelsToProcess = Math.floor(dynamicChance);
-                    const extraChance = dynamicChance - refuelsToProcess;
-                    if (Math.random() < extraChance) {
-                        refuelsToProcess++;
-                    }
+                    const dynamicChance = (0.035 + ((fissionedAtoms.length / REACTOR.atoms.length) * 0.45)) * refuelSpeedMult;
+                    let refuelsToProcess = Math.floor(dynamicChance) + (Math.random() < (dynamicChance % 1) ? 1 : 0);
 
                     for (let k = 0; k < refuelsToProcess; k++) {
                         const currentFissioned = REACTOR.atoms.filter(a => a.status === 'fissioned');
                         if (currentFissioned.length === 0) break;
-
                         const randomAtom = currentFissioned[Math.floor(Math.random() * currentFissioned.length)];
                         randomAtom.status = 'intact';
                         randomAtom.energyPulse = 0.3;
@@ -905,7 +685,6 @@
                 }
             }
 
-            // --- SPALTNEUTRONEN-INJEKTION AUS DER QUEUE ---
             const now = Date.now();
             for (let i = REACTOR.delayedNeutronQueue.length - 1; i >= 0; i--) {
                 const delayed = REACTOR.delayedNeutronQueue[i];
@@ -915,153 +694,84 @@
                 }
             }
 
-            // --- GEOMETRIE DES KOESSELS ---
-            const containmentPadding = 15;
-            const boxX = gridLeft - containmentPadding;
-            const boxY = gridTop - containmentPadding;
-            const boxW = gridWidth + containmentPadding * 2;
-            const boxH = gridHeight + containmentPadding * 2;
-
-            const fuelRatio = REACTOR.atoms.filter(a => a.status === 'intact').length / REACTOR.atoms.length;
-
-            // --- SUB-STEPPING PHYISKS ENGINE (Garantierte Kollisionen ohne Tunneling!) ---
+            const boxX = gridLeft - 15, boxY = gridTop - 15, boxW = gridWidth + 30, boxH = gridHeight + 30;
             const SUBSTEPS = 2;
+
             for (let step = 0; step < SUBSTEPS; step++) {
-                
                 for (let i = REACTOR.neutrons.length - 1; i >= 0; i--) {
                     const n = REACTOR.neutrons[i];
-                    
-                    // Fraktionales Update pro Teilsubstep
                     n.x += n.vx / SUBSTEPS;
                     n.y += n.vy / SUBSTEPS;
 
-                    // 1. Neutronen-Reflektor (Wall-Bounce am Containment-Kessel)
                     let collidedWithWall = false;
-                    if (n.x < boxX) {
-                        n.x = boxX;
-                        n.vx = -n.vx;
-                        collidedWithWall = true;
-                    } else if (n.x > boxX + boxW) {
-                        n.x = boxX + boxW;
-                        n.vx = -n.vx;
-                        collidedWithWall = true;
-                    }
-                    if (n.y < boxY) {
-                        n.y = boxY;
-                        n.vy = -n.vy;
-                        collidedWithWall = true;
-                    } else if (n.y > boxY + boxH) {
-                        n.y = boxY + boxH;
-                        n.vy = -n.vy;
-                        collidedWithWall = true;
-                    }
+                    if (n.x < boxX) { n.x = boxX; n.vx = -n.vx; collidedWithWall = true; } 
+                    else if (n.x > boxX + boxW) { n.x = boxX + boxW; n.vx = -n.vx; collidedWithWall = true; }
+                    if (n.y < boxY) { n.y = boxY; n.vy = -n.vy; collidedWithWall = true; } 
+                    else if (n.y > boxY + boxH) { n.y = boxY + boxH; n.vy = -n.vy; collidedWithWall = true; }
 
-                    // Reflexionserhalt (Leckage-Prüfung)
                     if (collidedWithWall && Math.random() > PHYSICS.wallReflectivity) {
                         REACTOR.neutrons.splice(i, 1);
                         continue;
                     }
 
-                    // 2. Interaktion mit den Steuerstäben
                     let absorbed = false;
-                    const numRods = REACTOR.controlRods;
-                    const rodWidth = 14;
                     const currentRodLength = boxH * rodInsertion;
-
-                    for (let rIdx = 0; rIdx < numRods; rIdx++) {
+                    for (let rIdx = 0; rIdx < REACTOR.controlRods; rIdx++) {
                         const rodX = boxX + boxW * 0.2 + rIdx * (boxW * 0.2);
-                        
-                        if (n.x >= rodX - rodWidth/2 && n.x <= rodX + rodWidth/2 && n.y >= boxY && n.y <= boxY + currentRodLength) {
+                        if (n.x >= rodX - 7 && n.x <= rodX + 7 && n.y >= boxY && n.y <= boxY + currentRodLength) {
                             REACTOR.neutrons.splice(i, 1);
                             absorbed = true;
                             break;
                         }
                     }
-
                     if (absorbed) continue;
 
-                    // 3. Absorption durch Xenon-135
                     if (Math.random() < (REACTOR.xenon * PHYSICS.xenonAbsorption / SUBSTEPS)) {
                         REACTOR.neutrons.splice(i, 1);
-                        // XENON BURN-OUT: Schluckt Xenon ein Neutron, wird es selbst zerstört (Massiv erhöht auf 0.25)
                         REACTOR.xenon = Math.max(0, REACTOR.xenon - 0.25);
                         continue;
                     }
 
-                    // 3.5 Parasitäre Absorption (Lebensdauer) & CPU-Überlastungsschutz
-                    // Reales Wasser und Stahlwände schlucken über Zeit thermische Neutronen.
-                    // Das verhindert, dass bei aufgebrauchtem Uran unsterbliche rote Neutronen übrig bleiben.
-                    const parasiticChance = n.isThermal ? 0.015 : 0.002;
-                    if (Math.random() < (parasiticChance / SUBSTEPS)) {
+                    if (Math.random() < ((n.isThermal ? 0.015 : 0.002) / SUBSTEPS)) {
                         REACTOR.neutrons.splice(i, 1);
                         continue;
                     }
 
-                    // CPU-Notabschaltung für die Grafik-Engine: Verhindert das Einfrieren des Browsers
-                    // Kappt die visuelle Neutronenanzahl sanft bei ca. 1200 Teilchen. 
-                    // Die MW-Leistung steigt dank der Spalt-Mathematik trotzdem weiter ins Unermessliche.
                     if (REACTOR.neutrons.length > 1200 && Math.random() < 0.4) {
                         REACTOR.neutrons.splice(i, 1);
                         continue;
                     }
 
-                    // 4. Moderation
-                    if (!n.isThermal) {
-                        if (Math.random() < (activeModeratorEfficiency * PHYSICS.moderatorRate / SUBSTEPS)) {
-                            n.isThermal = true;
-                            n.speed = 1.8;
-                            const angle = Math.random() * Math.PI * 2;
-                            n.vx = Math.cos(angle) * n.speed;
-                            n.vy = Math.sin(angle) * n.speed;
-                        }
+                    if (!n.isThermal && Math.random() < (activeModeratorEfficiency * PHYSICS.moderatorRate / SUBSTEPS)) {
+                        n.isThermal = true;
+                        n.speed = 1.8;
+                        const angle = Math.random() * Math.PI * 2;
+                        n.vx = Math.cos(angle) * n.speed;
+                        n.vy = Math.sin(angle) * n.speed;
                     }
 
-                    // 5. Kollision mit Uran-Atomen (Kernspaltung)
                     let fissionHappened = false;
                     for (let atom of REACTOR.atoms) {
-                        if (atom.status === 'intact') {
-                            const dist = Math.hypot(n.x - atom.x, n.y - atom.y);
-                            const interactionRadius = n.isThermal ? atom.size + 7.5 : atom.size + 1.5;
-                            
-                            if (dist < interactionRadius) {
-                                let fissionProbability = n.isThermal ? PHYSICS.fissionChanceThermal : PHYSICS.fissionChanceFast;
+                        if (atom.status === 'intact' && Math.hypot(n.x - atom.x, n.y - atom.y) < (n.isThermal ? atom.size + 7.5 : atom.size + 1.5)) {
+                            if (Math.random() < (n.isThermal ? PHYSICS.fissionChanceThermal : PHYSICS.fissionChanceFast)) {
+                                atom.status = 'fissioned';
+                                atom.energyPulse = 0.9;
+                                REACTOR.iodine += PHYSICS.xenonYield;
+                                playGeigerClick();
+                                rawPowerMeasure += PHYSICS.fissionEnergy; 
 
-                                if (Math.random() < fissionProbability) {
-                                    atom.status = 'fissioned';
-                                    atom.energyPulse = 0.9;
-                                    REACTOR.iodine += PHYSICS.xenonYield;
-
-                                    playGeigerClick();
-
-                                    // Spaltenergie
-                                    rawPowerMeasure += PHYSICS.fissionEnergy; 
-
-                                    // --- NEUTRONEN-PRODUKTION (Zwei Neutronen spalten und fliegen weg!) ---
-                                    REACTOR.neutrons.push(new Neutron(atom.x, atom.y, false)); // Promptes n° 1 ist garantiert
-
-                                    // Promptes n° 2 (Durchschnittlich 85% Wahrscheinlichkeit für echte Multiplikation)
-                                    if (Math.random() < PHYSICS.promptChance2) {
-                                        REACTOR.neutrons.push(new Neutron(atom.x, atom.y, false));
-                                    }
-
-                                    // Promptes n° 3 (Erhöht die Chance auf ein 3. Neutron auf 20%)
-                                    if (Math.random() < PHYSICS.promptChance3) {
-                                        REACTOR.neutrons.push(new Neutron(atom.x, atom.y, false));
-                                    }
-
-                                    // Verzögertes Neutron einreihen
-                                    if (Math.random() < PHYSICS.delayedChance) {
-                                        REACTOR.delayedNeutronQueue.push({
-                                            x: atom.x,
-                                            y: atom.y,
-                                            spawnTime: Date.now() + Math.random() * (PHYSICS.delayedDelayMax - PHYSICS.delayedDelayMin) + PHYSICS.delayedDelayMin
-                                        });
-                                    }
-
-                                    REACTOR.neutrons.splice(i, 1);
-                                    fissionHappened = true;
-                                    break;
+                                REACTOR.neutrons.push(new Neutron(atom.x, atom.y, false));
+                                if (Math.random() < PHYSICS.promptChance2) REACTOR.neutrons.push(new Neutron(atom.x, atom.y, false));
+                                if (Math.random() < PHYSICS.promptChance3) REACTOR.neutrons.push(new Neutron(atom.x, atom.y, false));
+                                if (Math.random() < PHYSICS.delayedChance) {
+                                    REACTOR.delayedNeutronQueue.push({
+                                        x: atom.x, y: atom.y,
+                                        spawnTime: Date.now() + Math.random() * (PHYSICS.delayedDelayMax - PHYSICS.delayedDelayMin) + PHYSICS.delayedDelayMin
+                                    });
                                 }
+                                REACTOR.neutrons.splice(i, 1);
+                                fissionHappened = true;
+                                break;
                             }
                         }
                     }
@@ -1069,78 +779,46 @@
                 }
             }
 
-            // Alle verbleibenden Teilchen aktualisieren ihre Spur
-            for (let n of REACTOR.neutrons) {
-                n.update();
-            }
+            for (let n of REACTOR.neutrons) n.update();
 
-            // --- SPONTANE NEUTRONENQUELLE & ANLASS-UNTERSTÜTZUNG ---
             const sourceChance = REACTOR.neutrons.length < PHYSICS.minNeutronsStarthilfe ? 0.25 : PHYSICS.backgroundSource;
             if (Math.random() < sourceChance || REACTOR.neutrons.length === 0) {
                 const randAtom = REACTOR.atoms[Math.floor(Math.random() * REACTOR.atoms.length)];
-                const startThermal = REACTOR.neutrons.length < PHYSICS.minNeutronsStarthilfe ? (Math.random() < 0.6) : (Math.random() < 0.35);
-                REACTOR.neutrons.push(new Neutron(randAtom.x + (Math.random()*12 - 6), randAtom.y + (Math.random()*12 - 6), startThermal));
+                REACTOR.neutrons.push(new Neutron(randAtom.x + (Math.random()*12 - 6), randAtom.y + (Math.random()*12 - 6), REACTOR.neutrons.length < PHYSICS.minNeutronsStarthilfe ? (Math.random() < 0.6) : (Math.random() < 0.35)));
             }
 
-            // --- TRÄGE THERMODYNAMIK (Wärmeübertragungskurve) ---
             const targetTemperature = 150 + (rawPowerMeasure * 0.015) / Math.max(0.1, coolantFlow * PHYSICS.coolantCapacity);
             REACTOR.temperature = REACTOR.temperature * 0.98 + targetTemperature * 0.02;
-
-            // Leistung berechnen
             REACTOR.power = REACTOR.power * 0.95 + (rawPowerMeasure * PHYSICS.basePowerScale) * 0.05;
             rawPowerMeasure *= 0.82;
-
             REACTOR.energyGenerated += (REACTOR.power / 3600000);
 
-            // Reaktorbrummen anpassen
-            if (audioCtx && humGainNode && !isMuted) {
-                const targetFreq = 50 + Math.min(250, REACTOR.power * 0.06);
-                humOscillator.frequency.setTargetAtTime(targetFreq, audioCtx.currentTime, 0.1);
-                
-                const targetGain = 0.005 + Math.min(0.06, REACTOR.power * 0.000015);
-                humGainNode.gain.setTargetAtTime(targetGain, audioCtx.currentTime, 0.1);
+            if (audioInitialized && humGainNode && !isMuted) {
+                humOscillator.frequency.setTargetAtTime(50 + Math.min(250, REACTOR.power * 0.06), audioCtx.currentTime, 0.1);
+                humGainNode.gain.setTargetAtTime(0.005 + Math.min(0.06, REACTOR.power * 0.000015), audioCtx.currentTime, 0.1);
             }
 
             updateStatusDisplays(activeModeratorEfficiency);
-
-            // Meltdown bei Erreichen des strukturellen Limits von 1800 Grad Celsius
-            if (REACTOR.temperature >= 1800) {
-                triggerMeltdown();
-            }
+            if (REACTOR.temperature >= 1800) triggerMeltdown();
         }
 
-        // --- CORE GRID UND RECHTECKIGES CONTAINMENT ZEICHNEN ---
         function drawCore() {
-            const w = canvas.width / window.devicePixelRatio;
-            const h = canvas.height / window.devicePixelRatio;
-
+            const w = canvas.width / window.devicePixelRatio, h = canvas.height / window.devicePixelRatio;
             ctx.clearRect(0, 0, w, h);
 
-            const containmentPadding = 15;
-            const boxX = gridLeft - containmentPadding;
-            const boxY = gridTop - containmentPadding;
-            const boxW = gridWidth + containmentPadding * 2;
-            const boxH = gridHeight + containmentPadding * 2;
+            const boxX = gridLeft - 15, boxY = gridTop - 15, boxW = gridWidth + 30, boxH = gridHeight + 30;
 
-            // Äußeres Containment (Sicherheits-Druckbehälter)
             ctx.strokeStyle = '#475569';
             ctx.lineWidth = 4;
             ctx.fillStyle = 'rgba(15, 23, 42, 0.75)';
-            
             ctx.beginPath();
-            ctx.roundRect(boxX, boxY, boxW, boxH, 12);
+            ctx.roundRect(boxX, boxY, boxW, boxH, 8);
             ctx.fill();
             ctx.stroke();
 
-            // Steuerstäbe im Hintergrund zeichnen (unter den Atomen)
-            const rodInsertion = parseFloat(controlRodsSlider.value) / 100;
-            const numRods = REACTOR.controlRods;
-            const rodWidth = 8; 
-            const currentRodLength = boxH * rodInsertion;
-
-            for (let rIdx = 0; rIdx < numRods; rIdx++) {
+            const currentRodLength = boxH * (parseFloat(controlRodsSlider.value) / 100);
+            for (let rIdx = 0; rIdx < REACTOR.controlRods; rIdx++) {
                 const rodX = boxX + boxW * 0.2 + rIdx * (boxW * 0.2);
-
                 ctx.strokeStyle = '#1e293b';
                 ctx.lineWidth = 2;
                 ctx.beginPath();
@@ -1153,229 +831,137 @@
                     ctx.strokeStyle = 'rgba(148, 163, 184, 0.9)';
                     ctx.lineWidth = 1.5;
                     ctx.beginPath();
-                    ctx.roundRect(rodX - rodWidth/2, boxY, rodWidth, currentRodLength, [0, 0, 4, 4]);
+                    ctx.roundRect(rodX - 4, boxY, 8, currentRodLength, [0, 0, 4, 4]);
                     ctx.fill();
                     ctx.stroke();
-
-                    // Warnstreifen
                     ctx.fillStyle = '#f59e0b';
-                    ctx.fillRect(rodX - rodWidth/2, boxY + 2, rodWidth, 10);
+                    ctx.fillRect(rodX - 4, boxY + 2, 8, 8);
                 }
             }
 
-            // Uran-Atome im Vordergrund zeichnen
-            for (let atom of REACTOR.atoms) {
-                atom.draw();
-            }
-
-            // Neutronen zeichnen
-            for (let n of REACTOR.neutrons) {
-                n.draw();
-            }
+            for (let atom of REACTOR.atoms) atom.draw();
+            for (let n of REACTOR.neutrons) n.draw();
         }
 
-        // --- ZUSTANDSANZEIGEN AKTUALISIEREN ---
         function updateStatusDisplays(activeModEff) {
             const rodFactor = 1.0 - (parseFloat(controlRodsSlider.value) / 100);
             const fuelRatio = REACTOR.atoms.filter(a => a.status === 'intact').length / REACTOR.atoms.length;
             const xenonDamping = Math.max(0.1, 1 - (REACTOR.xenon * 1.8));
 
-            // k-eff physikalisch schätzen
             let keff = (activeModEff * 2.3) * rodFactor * (0.3 + 0.7 * fuelRatio) * xenonDamping;
             if (keff < 0) keff = 0;
             
             keffDisplay.innerText = keff.toFixed(2);
-            if (keff > 1.05) {
-                keffDisplay.className = "text-lg font-mono font-bold text-red-500 animate-pulse";
-            } else if (keff >= 0.98 && keff <= 1.02) {
-                keffDisplay.className = "text-lg font-mono font-bold text-green-400";
-            } else {
-                keffDisplay.className = "text-lg font-mono font-bold text-yellow-500";
-            }
+            keffDisplay.className = `text-sm font-mono font-bold ${keff > 1.05 ? 'text-red-500 animate-pulse' : (keff >= 0.98 && keff <= 1.02 ? 'text-green-400' : 'text-yellow-500')}`;
 
             const fuelPercent = Math.round(fuelRatio * 100);
             fuelDisplay.innerText = `${fuelPercent}%`;
-            if (fuelPercent < 20) {
-                fuelDisplay.className = "text-lg font-mono font-bold text-red-500";
-            } else if (fuelPercent < 60) {
-                fuelDisplay.className = "text-lg font-mono font-bold text-yellow-500";
-            } else {
-                fuelDisplay.className = "text-lg font-mono font-bold text-emerald-400";
-            }
+            fuelDisplay.className = `text-sm font-mono font-bold ${fuelPercent < 20 ? 'text-red-500' : (fuelPercent < 60 ? 'text-yellow-500' : 'text-emerald-400')}`;
 
             neutronCountDisplay.innerText = REACTOR.neutrons.length + REACTOR.delayedNeutronQueue.length;
-
             powerText.innerText = `${REACTOR.power.toFixed(1)} MW`;
-            const powerPct = Math.min(100, (REACTOR.power / 3500) * 100);
-            powerBar.style.width = `${powerPct}%`;
+            powerBar.style.width = `${Math.min(100, (REACTOR.power / 3500) * 100)}%`;
 
             tempText.innerText = `${REACTOR.temperature.toFixed(1)} °C`;
-            const tempPct = Math.min(100, (REACTOR.temperature / 1800) * 100);
-            tempBar.style.width = `${tempPct}%`;
+            tempBar.style.width = `${Math.min(100, (REACTOR.temperature / 1800) * 100)}%`;
 
             if (REACTOR.power < 50) {
                 powerIndicator.innerText = "LEERLAUF";
-                powerIndicator.className = "px-2 py-0.5 rounded text-[10px] font-semibold bg-slate-800 text-slate-400 border border-slate-700";
+                powerIndicator.className = "px-1.5 py-0.5 rounded text-[9px] font-semibold bg-slate-800 text-slate-400 border border-slate-700 mt-0.5";
                 powerBar.className = "bg-slate-500 h-full transition-all duration-300";
             } else if (REACTOR.power <= 1200) {
                 powerIndicator.innerText = "NENNBETRIEB";
-                powerIndicator.className = "px-2 py-0.5 rounded text-[10px] font-semibold bg-green-500/10 text-green-400 border border-green-500/30 glow-green";
+                powerIndicator.className = "px-1.5 py-0.5 rounded text-[9px] font-semibold bg-green-500/10 text-green-400 border border-green-500/30 glow-green mt-0.5";
                 powerBar.className = "bg-green-500 h-full transition-all duration-300";
             } else {
-                powerIndicator.innerText = "ÜBERLAST (WARNUNG)";
-                powerIndicator.className = "px-2 py-0.5 rounded text-[10px] font-semibold bg-red-500/10 text-red-400 border border-red-500/30 animate-pulse glow-red";
+                powerIndicator.innerText = "ÜBERLAST";
+                powerIndicator.className = "px-1.5 py-0.5 rounded text-[9px] font-semibold bg-red-500/10 text-red-400 border border-red-500/30 animate-pulse glow-red mt-0.5";
                 powerBar.className = "bg-red-500 h-full transition-all duration-300";
             }
 
             if (REACTOR.temperature < 300) {
                 tempIndicator.innerText = "KALT";
-                tempIndicator.className = "px-2 py-0.5 rounded text-[10px] font-semibold bg-cyan-500/10 text-cyan-400 border border-cyan-500/30";
+                tempIndicator.className = "px-1.5 py-0.5 rounded text-[9px] font-semibold bg-cyan-500/10 text-cyan-400 border border-cyan-500/30 mt-0.5";
                 tempBar.className = "bg-cyan-500 h-full transition-all duration-300";
                 stopAlarmSound();
             } else if (REACTOR.temperature <= 1100) {
                 tempIndicator.innerText = "BETRIEBSTEMP";
-                tempIndicator.className = "px-2 py-0.5 rounded text-[10px] font-semibold bg-green-500/10 text-green-400 border border-green-500/30";
+                tempIndicator.className = "px-1.5 py-0.5 rounded text-[9px] font-semibold bg-green-500/10 text-green-400 border border-green-500/30 mt-0.5";
                 tempBar.className = "bg-green-500 h-full transition-all duration-300";
                 stopAlarmSound();
             } else {
                 tempIndicator.innerText = "KRITISCHE HITZE";
-                tempIndicator.className = "px-2 py-0.5 rounded text-[10px] font-semibold bg-red-500/10 text-red-500 border border-red-500/30 animate-pulse glow-red";
+                tempIndicator.className = "px-1.5 py-0.5 rounded text-[9px] font-semibold bg-red-500/10 text-red-500 border border-red-500/30 animate-pulse glow-red mt-0.5";
                 tempBar.className = "bg-red-500 h-full transition-all duration-300";
                 startAlarmSound();
             }
 
             totalEnergyText.innerText = `${REACTOR.energyGenerated.toFixed(4)} GWh`;
-
+            
             if (REACTOR.scramActive) {
                 statusBadge.innerText = "SCRAM AKTIV";
-                statusBadge.className = "px-3 py-1.5 rounded-full text-xs font-semibold uppercase flex items-center gap-2 bg-yellow-500/10 text-yellow-400 border border-yellow-500/30 glow-yellow";
+                statusBadge.className = "px-2.5 py-1 rounded-full text-[10px] font-semibold uppercase flex items-center gap-1.5 bg-yellow-500/10 text-yellow-400 border border-yellow-500/30 glow-yellow";
             } else if (REACTOR.temperature > 1100) {
-                statusBadge.innerText = "WARNUNG: REAKTOR REAGIERT HEISS";
-                statusBadge.className = "px-3 py-1.5 rounded-full text-xs font-semibold uppercase flex items-center gap-2 bg-red-500/10 text-red-400 border border-red-500/30 glow-red animate-pulse";
+                statusBadge.innerText = "HEISS";
+                statusBadge.className = "px-2.5 py-1 rounded-full text-[10px] font-semibold uppercase flex items-center gap-1.5 bg-red-500/10 text-red-400 border border-red-500/30 glow-red animate-pulse";
             } else {
-                statusBadge.innerText = "Reaktor Stabil";
-                statusBadge.className = "px-3 py-1.5 rounded-full text-xs font-semibold uppercase flex items-center gap-2 bg-green-500/10 text-green-400 border border-green-500/30 glow-green";
+                statusBadge.innerText = "Stabil";
+                statusBadge.className = "px-2.5 py-1 rounded-full text-[10px] font-semibold uppercase flex items-center gap-1.5 bg-green-500/10 text-green-400 border border-green-500/30 glow-green";
             }
         }
 
-        // --- KERNSCHMELZE AUSLÖSEN ---
         function triggerMeltdown() {
             REACTOR.isMeltdown = true;
             stopAlarmSound();
-            
-            if (audioCtx && !isMuted) {
-                const osc = audioCtx.createOscillator();
-                const gain = audioCtx.createGain();
-                osc.type = 'sawtooth';
-                osc.frequency.value = 180;
+            if (audioInitialized && !isMuted) {
+                const osc = audioCtx.createOscillator(), gain = audioCtx.createGain();
+                osc.type = 'sawtooth'; osc.frequency.value = 180;
                 gain.gain.setValueAtTime(0.08, audioCtx.currentTime);
-                osc.connect(gain);
-                gain.connect(audioCtx.destination);
-                
-                osc.start();
-                osc.stop(audioCtx.currentTime + 3);
+                osc.connect(gain); gain.connect(audioCtx.destination);
+                osc.start(); osc.stop(audioCtx.currentTime + 3);
             }
-
-            for (let atom of REACTOR.atoms) {
-                atom.status = 'melted';
-            }
-            REACTOR.neutrons = [];
-            REACTOR.delayedNeutronQueue = [];
+            for (let atom of REACTOR.atoms) atom.status = 'melted';
+            REACTOR.neutrons = []; REACTOR.delayedNeutronQueue = [];
             drawCore();
-
-            meltdownOverlay.classList.remove('hidden');
-            meltdownOverlay.classList.add('flex');
+            meltdownOverlay.classList.remove('hidden'); meltdownOverlay.classList.add('flex');
         }
 
-        // --- LIVE GRAPH HISTORIE ZEICHNEN ---
         function drawChart() {
             const w = chartCanvas.width = chartCanvas.parentElement.clientWidth;
             const h = chartCanvas.height = chartCanvas.parentElement.clientHeight;
 
-            REACTOR.history.push({
-                power: REACTOR.power,
-                temp: REACTOR.temperature
-            });
-
-            if (REACTOR.history.length > REACTOR.maxHistorySize) {
-                REACTOR.history.shift();
-            }
+            REACTOR.history.push({ power: REACTOR.power, temp: REACTOR.temperature });
+            if (REACTOR.history.length > REACTOR.maxHistorySize) REACTOR.history.shift();
 
             chartCtx.clearRect(0, 0, w, h);
-
-            chartCtx.strokeStyle = '#1e293b';
-            chartCtx.lineWidth = 1;
+            chartCtx.strokeStyle = '#1e293b'; chartCtx.lineWidth = 1;
             for (let i = 1; i < 4; i++) {
-                const y = (h / 4) * i;
-                chartCtx.beginPath();
-                chartCtx.moveTo(0, y);
-                chartCtx.lineTo(w, y);
-                chartCtx.stroke();
+                chartCtx.beginPath(); chartCtx.moveTo(0, (h/4)*i); chartCtx.lineTo(w, (h/4)*i); chartCtx.stroke();
             }
 
             if (REACTOR.history.length < 2) return;
-
             const stepX = w / (REACTOR.maxHistorySize - 1);
 
-            // LEISTUNGSKURVE ZEICHNEN (Grün)
-            chartCtx.strokeStyle = '#22c55e';
-            chartCtx.lineWidth = 2;
-            chartCtx.beginPath();
+            chartCtx.strokeStyle = '#22c55e'; chartCtx.lineWidth = 1.5; chartCtx.beginPath();
             for (let i = 0; i < REACTOR.history.length; i++) {
-                const x = i * stepX;
-                const y = h - (REACTOR.history[i].power / 3800) * (h - 10) - 5;
-                if (i === 0) chartCtx.moveTo(x, y);
-                else chartCtx.lineTo(x, y);
+                const y = h - (REACTOR.history[i].power / 3800) * (h - 5) - 2;
+                if (i === 0) chartCtx.moveTo(i * stepX, y); else chartCtx.lineTo(i * stepX, y);
             }
             chartCtx.stroke();
 
-            // TEMPERATURKURVE ZEICHNEN (Cyan)
-            chartCtx.strokeStyle = '#06b6d4';
-            chartCtx.lineWidth = 1.5;
-            chartCtx.beginPath();
+            chartCtx.strokeStyle = '#06b6d4'; chartCtx.lineWidth = 1.5; chartCtx.beginPath();
             for (let i = 0; i < REACTOR.history.length; i++) {
-                const x = i * stepX;
-                const y = h - (REACTOR.history[i].temp / 2000) * (h - 10) - 5;
-                if (i === 0) chartCtx.moveTo(x, y);
-                else chartCtx.lineTo(x, y);
+                const y = h - (REACTOR.history[i].temp / 2000) * (h - 5) - 2;
+                if (i === 0) chartCtx.moveTo(i * stepX, y); else chartCtx.lineTo(i * stepX, y);
             }
             chartCtx.stroke();
         }
 
-        // --- INTERAKTIVE BUTTONS & PHYSIK MODAL AKTIONEN ---
+        openSettingsBtn.addEventListener('click', (e) => { e.stopPropagation(); document.getElementById('param_promptChance2').value = Math.round(PHYSICS.promptChance2 * 100); document.getElementById('param_promptChance3').value = Math.round(PHYSICS.promptChance3 * 100); document.getElementById('param_delayedChance').value = Math.round(PHYSICS.delayedChance * 100); document.getElementById('param_fissionChanceThermal').value = Math.round(PHYSICS.fissionChanceThermal * 100); document.getElementById('param_fissionChanceFast').value = Math.round(PHYSICS.fissionChanceFast * 100); document.getElementById('param_wallReflectivity').value = Math.round(PHYSICS.wallReflectivity * 100); document.getElementById('param_tempCoefficient').value = PHYSICS.tempCoefficient; updateSliderLabelDisplays(); settingsModal.classList.remove('hidden'); });
+        closeSettingsBtn.addEventListener('click', () => settingsModal.classList.add('hidden'));
+        applyCloseBtn.addEventListener('click', () => { PHYSICS.promptChance2 = parseFloat(document.getElementById('param_promptChance2').value)/100; PHYSICS.promptChance3 = parseFloat(document.getElementById('param_promptChance3').value)/100; PHYSICS.delayedChance = parseFloat(document.getElementById('param_delayedChance').value)/100; PHYSICS.fissionChanceThermal = parseFloat(document.getElementById('param_fissionChanceThermal').value)/100; PHYSICS.fissionChanceFast = parseFloat(document.getElementById('param_fissionChanceFast').value)/100; PHYSICS.wallReflectivity = parseFloat(document.getElementById('param_wallReflectivity').value)/100; PHYSICS.tempCoefficient = parseInt(document.getElementById('param_tempCoefficient').value); settingsModal.classList.add('hidden'); });
+        resetDefaultsBtn.addEventListener('click', () => { PHYSICS = { ...PHYSICS_DEFAULTS }; settingsModal.classList.add('hidden'); });
 
-        // Öffnen & Schließen des Einstellungs-Modals
-        openSettingsBtn.addEventListener('click', () => {
-            initAudio();
-            syncModalSlidersWithPhysics();
-            settingsModal.classList.remove('hidden');
-        });
-
-        closeSettingsBtn.addEventListener('click', () => {
-            settingsModal.classList.add('hidden');
-        });
-
-        applyCloseBtn.addEventListener('click', () => {
-            applyModalValuesToPhysics();
-            settingsModal.classList.add('hidden');
-        });
-
-        // Werte der Sliders mit aktivem Physik-Objekt synchronisieren
-        function syncModalSlidersWithPhysics() {
-            document.getElementById('param_promptChance2').value = Math.round(PHYSICS.promptChance2 * 100);
-            document.getElementById('param_promptChance3').value = Math.round(PHYSICS.promptChance3 * 100);
-            document.getElementById('param_delayedChance').value = Math.round(PHYSICS.delayedChance * 100);
-            document.getElementById('param_fissionChanceThermal').value = Math.round(PHYSICS.fissionChanceThermal * 100);
-            document.getElementById('param_fissionChanceFast').value = Math.round(PHYSICS.fissionChanceFast * 100);
-            document.getElementById('param_wallReflectivity').value = Math.round(PHYSICS.wallReflectivity * 100);
-            document.getElementById('param_backgroundSource').value = Math.round(PHYSICS.backgroundSource * 100);
-            document.getElementById('param_tempCoefficient').value = PHYSICS.tempCoefficient;
-            document.getElementById('param_fissionEnergy').value = PHYSICS.fissionEnergy;
-
-            updateSliderLabelDisplays();
-        }
-
-        // Live-Beschriftungen der Modalslider updaten
         function updateSliderLabelDisplays() {
             document.getElementById('promptChance2Val').innerText = `${document.getElementById('param_promptChance2').value}%`;
             document.getElementById('promptChance3Val').innerText = `${document.getElementById('param_promptChance3').value}%`;
@@ -1383,146 +969,59 @@
             document.getElementById('fissionChanceThermalVal').innerText = `${document.getElementById('param_fissionChanceThermal').value}%`;
             document.getElementById('fissionChanceFastVal').innerText = `${document.getElementById('param_fissionChanceFast').value}%`;
             document.getElementById('wallReflectivityVal').innerText = `${document.getElementById('param_wallReflectivity').value}%`;
-            document.getElementById('backgroundSourceVal').innerText = `${(document.getElementById('param_backgroundSource').value / 100).toFixed(2)} Hz`;
             document.getElementById('tempCoefficientVal').innerText = document.getElementById('param_tempCoefficient').value;
-            document.getElementById('fissionEnergyVal').innerText = document.getElementById('param_fissionEnergy').value;
         }
+        settingsModal.querySelectorAll('input[type="range"]').forEach(input => input.addEventListener('input', updateSliderLabelDisplays));
 
-        // Slidereingaben live an die Labels binden
-        const allModalInputs = settingsModal.querySelectorAll('input[type="range"]');
-        allModalInputs.forEach(input => {
-            input.addEventListener('input', updateSliderLabelDisplays);
-        });
-
-        // Eingestellte Werte in das aktive Simulations-Objekt übertragen
-        function applyModalValuesToPhysics() {
-            PHYSICS.promptChance2 = parseFloat(document.getElementById('param_promptChance2').value) / 100;
-            PHYSICS.promptChance3 = parseFloat(document.getElementById('param_promptChance3').value) / 100;
-            PHYSICS.delayedChance = parseFloat(document.getElementById('param_delayedChance').value) / 100;
-            PHYSICS.fissionChanceThermal = parseFloat(document.getElementById('param_fissionChanceThermal').value) / 100;
-            PHYSICS.fissionChanceFast = parseFloat(document.getElementById('param_fissionChanceFast').value) / 100;
-            PHYSICS.wallReflectivity = parseFloat(document.getElementById('param_wallReflectivity').value) / 100;
-            PHYSICS.backgroundSource = parseFloat(document.getElementById('param_backgroundSource').value) / 100;
-            PHYSICS.tempCoefficient = parseInt(document.getElementById('param_tempCoefficient').value);
-            PHYSICS.fissionEnergy = parseInt(document.getElementById('param_fissionEnergy').value);
-        }
-
-        // Standardwerte wiederherstellen
-        resetDefaultsBtn.addEventListener('click', () => {
-            PHYSICS = { ...PHYSICS_DEFAULTS };
-            syncModalSlidersWithPhysics();
-        });
-
-        // --- INTERAKTIVE BUTTONS & AKTIONEN ---
-
-        // SCRAM - Schnellabschaltung
         scramBtn.addEventListener('click', () => {
-            initAudio();
-            REACTOR.scramActive = true;
-            controlRodsSlider.value = 100;
-            moderatorSlider.value = 0;
-            
+            REACTOR.scramActive = true; controlRodsSlider.value = 100; moderatorSlider.value = 0;
             scramBtn.classList.add('bg-red-900', 'scale-95');
-            setTimeout(() => {
-                scramBtn.classList.remove('bg-red-900', 'scale-95');
-                REACTOR.scramActive = false;
-            }, 1000);
+            setTimeout(() => { scramBtn.classList.remove('bg-red-900', 'scale-95'); REACTOR.scramActive = false; }, 1000);
         });
 
-        // Manuelles Brennstoff nachfüllen (Laden)
         refuelBtn.addEventListener('click', () => {
-            initAudio();
-            for (let atom of REACTOR.atoms) {
-                if (atom.status === 'fissioned') {
-                    atom.status = 'intact';
-                    atom.energyPulse = 0.5;
-                }
-            }
-            // Dekontamination: Lüftet Spaltgase bei manuellem Eingriff komplett aus!
-            REACTOR.xenon = 0;
-            REACTOR.iodine = 0;
-        });
-
-        // Automatisches Nachfüllen toggeln
-        autoRefuelBtn.addEventListener('click', () => {
-            initAudio();
-            REACTOR.autoRefuel = !REACTOR.autoRefuel;
-            updateAutoRefuelUI();
+            for (let atom of REACTOR.atoms) if (atom.status === 'fissioned') { atom.status = 'intact'; atom.energyPulse = 0.5; }
+            REACTOR.xenon = 0; REACTOR.iodine = 0;
         });
 
         function updateAutoRefuelUI() {
             if (REACTOR.autoRefuel) {
                 autoRefuelBtn.classList.remove('bg-slate-800', 'border-slate-700', 'text-slate-200');
                 autoRefuelBtn.classList.add('bg-cyan-950', 'border-cyan-500', 'text-cyan-400', 'glow-green');
-                autoRefuelText.innerText = "Auto-Refuel: EIN";
-                autoRefuelIcon.classList.add('animate-spin');
+                autoRefuelText.innerText = "Auto-Refuel: EIN"; autoRefuelIcon.classList.add('animate-spin');
             } else {
                 autoRefuelBtn.classList.remove('bg-cyan-950', 'border-cyan-500', 'text-cyan-400', 'glow-green');
                 autoRefuelBtn.classList.add('bg-slate-800', 'border-slate-700', 'text-slate-200');
-                autoRefuelText.innerText = "Auto-Refuel: AUS";
-                autoRefuelIcon.classList.remove('animate-spin');
+                autoRefuelText.innerText = "Auto-Refuel: AUS"; autoRefuelIcon.classList.remove('animate-spin');
             }
         }
+        autoRefuelBtn.addEventListener('click', () => { REACTOR.autoRefuel = !REACTOR.autoRefuel; updateAutoRefuelUI(); });
 
-        // Neutronenquelle zünden
         neutronSourceBtn.addEventListener('click', () => {
-            initAudio();
-            const w = canvas.width / window.devicePixelRatio;
-            const h = canvas.height / window.devicePixelRatio;
-            for (let k = 0; k < 40; k++) {
-                REACTOR.neutrons.push(new Neutron(w / 2 + (Math.random()*40-20), h / 2 + (Math.random()*40-20), false));
-            }
+            const w = canvas.width/window.devicePixelRatio, h = canvas.height/window.devicePixelRatio;
+            for (let k=0; k<40; k++) REACTOR.neutrons.push(new Neutron(w/2+(Math.random()*40-20), h/2+(Math.random()*40-20), false));
         });
 
-        // Meltdown Reset
         resetMeltdownBtn.addEventListener('click', () => {
-            REACTOR.isMeltdown = false;
-            REACTOR.temperature = 150;
-            REACTOR.power = 0;
-            REACTOR.energyGenerated = 0;
-            REACTOR.iodine = 0.0;
-            REACTOR.xenon = 0.0;
-            REACTOR.history = [];
-            REACTOR.autoRefuel = true; // Standardmäßig wieder an!
-            PHYSICS = { ...PHYSICS_DEFAULTS }; // Kernphysik ebenfalls zurücksetzen
-            
-            updateAutoRefuelUI();
-
-            controlRodsSlider.value = 30;
-            moderatorSlider.value = 70;
-            coolantSlider.value = 50;
-            refuelSpeedSlider.value = 1.0;
-
-            initGrid();
-            meltdownOverlay.classList.remove('flex');
-            meltdownOverlay.classList.add('hidden');
-            stopAlarmSound();
+            REACTOR.isMeltdown = false; REACTOR.temperature = 150; REACTOR.power = 0; REACTOR.energyGenerated = 0;
+            REACTOR.iodine = 0.0; REACTOR.xenon = 0.0; REACTOR.history = []; REACTOR.autoRefuel = true; updateAutoRefuelUI();
+            PHYSICS = { ...PHYSICS_DEFAULTS }; controlRodsSlider.value = 30; moderatorSlider.value = 70; coolantSlider.value = 50; refuelSpeedSlider.value = 8.0;
+            initGrid(); meltdownOverlay.classList.remove('flex'); meltdownOverlay.classList.add('hidden'); stopAlarmSound();
         });
 
         canvas.addEventListener('mousedown', (e) => {
-            initAudio();
             const rect = canvas.getBoundingClientRect();
-            const clickX = e.clientX - rect.left;
-            const clickY = e.clientY - rect.top;
-
-            for (let k = 0; k < 15; k++) {
-                REACTOR.neutrons.push(new Neutron(clickX, clickY, Math.random() < 0.4));
-            }
+            for (let k=0; k<15; k++) REACTOR.neutrons.push(new Neutron(e.clientX-rect.left, e.clientY-rect.top, Math.random()<0.4));
         });
 
-        // --- SIMULATION-SCHLEIFE ---
-        function tick(timestamp) {
-            updateSimulation();
-            drawCore();
-            drawChart();
+        function tick() {
+            updateSimulation(); drawCore(); drawChart();
             requestAnimationFrame(tick);
         }
 
         window.addEventListener('resize', resizeCanvas);
         window.onload = function() {
-            lucide.createIcons();
-            resizeCanvas();
-            updateAutoRefuelUI(); // UI an den Default-Zustand (True) anpassen
+            lucide.createIcons(); resizeCanvas(); updateAutoRefuelUI();
             requestAnimationFrame(tick);
         };
     </script>
