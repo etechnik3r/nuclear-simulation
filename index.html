@@ -885,7 +885,8 @@
                 if (fissionedAtoms.length > 0) {
                     const depletionRatio = fissionedAtoms.length / REACTOR.atoms.length;
                     const baseRefuelChance = 0.035; 
-                    const dynamicChance = (baseRefuelChance + (depletionRatio * 0.18)) * refuelSpeedMult;
+                    // Angehoben von 0.18 auf 0.45, damit man bei extremer Überlast noch grüne Atome aufblitzen sieht
+                    const dynamicChance = (baseRefuelChance + (depletionRatio * 0.45)) * refuelSpeedMult;
 
                     let refuelsToProcess = Math.floor(dynamicChance);
                     const extraChance = dynamicChance - refuelsToProcess;
@@ -984,6 +985,23 @@
                         REACTOR.neutrons.splice(i, 1);
                         // XENON BURN-OUT: Schluckt Xenon ein Neutron, wird es selbst zerstört (Massiv erhöht auf 0.25)
                         REACTOR.xenon = Math.max(0, REACTOR.xenon - 0.25);
+                        continue;
+                    }
+
+                    // 3.5 Parasitäre Absorption (Lebensdauer) & CPU-Überlastungsschutz
+                    // Reales Wasser und Stahlwände schlucken über Zeit thermische Neutronen.
+                    // Das verhindert, dass bei aufgebrauchtem Uran unsterbliche rote Neutronen übrig bleiben.
+                    const parasiticChance = n.isThermal ? 0.015 : 0.002;
+                    if (Math.random() < (parasiticChance / SUBSTEPS)) {
+                        REACTOR.neutrons.splice(i, 1);
+                        continue;
+                    }
+
+                    // CPU-Notabschaltung für die Grafik-Engine: Verhindert das Einfrieren des Browsers
+                    // Kappt die visuelle Neutronenanzahl sanft bei ca. 1200 Teilchen. 
+                    // Die MW-Leistung steigt dank der Spalt-Mathematik trotzdem weiter ins Unermessliche.
+                    if (REACTOR.neutrons.length > 1200 && Math.random() < 0.4) {
+                        REACTOR.neutrons.splice(i, 1);
                         continue;
                     }
 
