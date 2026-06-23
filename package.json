@@ -1,0 +1,9 @@
+{
+  "name": "nuclear-simulation",
+  "version": "6.0.0",
+  "description": "Interaktive, qualitative Kernreaktor-Simulation (HTML5-Canvas) mit testbarem Physik-Modell.",
+  "scripts": {
+    "test": "node tests/physics.test.js"
+  },
+  "license": "MIT"
+}
