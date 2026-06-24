@@ -27,7 +27,8 @@ kein Server, kein Build). `physics.js` muss im selben Verzeichnis liegen.
 - **Neutronenquelle zünden**: injiziert Startneutronen.
 - **SCRAM**: Schnellabschaltung (Stäbe ein, Moderator aus). Achtung: durch
   **Nachzerfallswärme** steigt die Temperatur danach kurz weiter.
-- **Auto-Refuel** (Standard: AUS): beschleunigter Brennstoffersatz, rein für Demozwecke.
+- **Auto-Refuel** (Standard: AN): beschleunigter Brennstoffersatz, damit der Kern nicht in
+  Sekunden abbrennt; rein für Demozwecke (abschaltbar).
 - **Einstellungen** (Zahnrad): physikalische Kernparameter feinjustieren.
 
 **Wichtige Metriken (mit Tooltips)**

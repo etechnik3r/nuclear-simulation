@@ -55,7 +55,7 @@
         basePowerScale: 0.08,         // Umrechnung Spaltenergie-Eintrag -> thermische Leistung (MW)
 
         // --- Reaktivitäts-Rückkopplung (negativ) ---
-        dopplerCoeff: 1500,           // Brennstoff-/Doppler-Rückkopplung (kleiner = stärker, prompt)
+        dopplerCoeff: 750,            // Brennstoff-/Doppler-Rückkopplung (kleiner = stärker, prompt)
         modTempCoeff: 1200,           // Moderator-/Kühlmittel-Temperaturkoeffizient (kleiner = stärker)
 
         // --- Iodine/Xenon-Kinetik (physikalische Zeitkonstanten) ---
@@ -74,9 +74,9 @@
         // --- Thermohydraulik (Zwei-Knoten: Brennstoff + Kühlmittel) ---
         ambient: AMBIENT,
         coolantMin: 0.05,             // minimaler effektiver Kühlmitteldurchsatz
-        fuelHeatCoef: 0.234,          // Kopplung Leistung -> Brennstofftemperatur
-        fuelCoolCoef: 1.4,            // Wärmeübergang Brennstoff -> Kühlmittel
-        coolCoef: 1.0,                // Wärmeabfuhr Kühlmittel -> Sekundärkreis
+        fuelHeatCoef: 0.7,            // Kopplung Leistung -> Brennstofftemperatur (heißer Brennstoff -> wirksamer Doppler)
+        fuelCoolCoef: 1.2,            // Wärmeübergang Brennstoff -> Kühlmittel
+        coolCoef: 4.5,                // Wärmeabfuhr Kühlmittel -> Sekundärkreis (hoch -> Kühlmittel bleibt unter Sättigung)
         fuelCap: 4.0,                 // Wärmekapazität Brennstoffknoten (größer = träger)
         coolCap: 8.0,                 // Wärmekapazität Kühlmittelknoten
 
@@ -90,7 +90,7 @@
 
         // --- Turbine / Sekundärkreis / Netz ---
         turbineEfficiency: 0.33,      // thermischer Wirkungsgrad (Wärme -> Strom)
-        turbineMinSink: 0.12,         // Rest-Wärmeabfuhr bei Last 0 (Kondensator/Bypass)
+        turbineMinSink: 0.7,          // Rest-Wärmeabfuhr bei Last 0 (Kondensator/Bypass; Primärkühlung hängt v.a. an den Pumpen)
         gridStiffness: 12,            // Hz pro relativer Leistungsabweichung (Netzsteifigkeit)
         gridNominalFreq: 50,          // Hz
 
@@ -107,7 +107,7 @@
         pressureRate: 6,              // bar/s, Annäherung Ist an Soll (Druckhalter)
         voidBand: 25,                 // °C unterhalb der Sättigung beginnt nennenswerter Void
         voidReactivityCoef: 0.6,      // wie stark Void die Moderation senkt (0..1 -> bis -60%)
-        voidCoolingPenalty: 0.7,      // wie stark Void die Wärmeabfuhr verschlechtert
+        voidCoolingPenalty: 0.4,      // wie stark Void die Wärmeabfuhr verschlechtert (kein Lock-up)
         dnbWarn: 30,                  // °C Siedereserve, ab der gewarnt wird
 
         // --- Reaktivität / Periode (Anzeige) ---
