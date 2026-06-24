@@ -983,17 +983,11 @@
                 REACTOR.neutrons.push(new Neutron(a.x + (Math.random()*12 - 6), a.y + (Math.random()*12 - 6), REACTOR.neutrons.length < PHYSICS.minNeutronsStarthilfe ? (Math.random() < 0.6) : (Math.random() < 0.35)));
             }
 
-            // gemessenes k-eff + Periode (gleitendes Fenster)
+            // gemessenes k-eff (gleitendes Fenster)
             REACTOR.accBirths += births; REACTOR.accDeaths += deaths; REACTOR.accTime += dtReal;
             if (REACTOR.accTime >= 0.4) {
                 const kMeasured = RP.keffFromCounts(REACTOR.accBirths, REACTOR.accDeaths);
                 REACTOR.keff += (kMeasured - REACTOR.keff) * 0.5;
-                const flux = REACTOR.neutrons.length + REACTOR.delayedNeutronQueue.length;
-                if (REACTOR.prevFlux > 0 && flux > 0) {
-                    const g = Math.log(flux / REACTOR.prevFlux) / REACTOR.accTime;
-                    REACTOR.period = RP.reactorPeriod(g, PHYSICS);
-                }
-                REACTOR.prevFlux = flux;
                 REACTOR.accBirths = 0; REACTOR.accDeaths = 0; REACTOR.accTime = 0;
             }
             const rea = RP.reactivity(REACTOR.keff, PHYSICS.delayedChance);
@@ -1010,6 +1004,16 @@
             const thermRes = RP.thermalStep(REACTOR, totalThermal, effCoolantFlow, turbineLoad, dtReal, PHYSICS);
 
             REACTOR.power = REACTOR.fissionPower;
+
+            // Reaktorperiode aus dem GEGLÄTTETEN Leistungstrend (rauscharm) statt aus dem Neutronenrauschen
+            REACTOR.perAcc = (REACTOR.perAcc || 0) + dtReal;
+            if (REACTOR.perAcc >= 1.5) {
+                const pPrev = REACTOR.perPrevPower || 0;
+                REACTOR.period = (pPrev > 5 && REACTOR.power > 5)
+                    ? RP.reactorPeriod(Math.log(REACTOR.power / pPrev) / REACTOR.perAcc, PHYSICS)
+                    : Infinity;
+                REACTOR.perPrevPower = REACTOR.power; REACTOR.perAcc = 0;
+            }
 
             // Elektrische Leistung: Turbine zieht Dampf; durch Wirkungsgrad zu Strom
             const turbineCapacity = turbineLoad * 4000; // MW thermisch, die die Turbine bei voller Last ziehen kann
@@ -1128,6 +1132,12 @@
             meltdownOverlay.classList.remove('hidden'); meltdownOverlay.classList.add('flex');
         }
 
+        // Skalen (Vollausschlag) der drei Kurven – an die realen Wertebereiche angepasst
+        const CHART_SERIES = [
+            { key: 'power', live: 'power',          scale: 1000, color: '#22c55e', unit: 'MW' },
+            { key: 'temp',  live: 'fuelTemp',       scale: 1200, color: '#06b6d4', unit: '°C' },
+            { key: 'mwe',   live: 'electricalPower', scale: 300, color: '#e879f9', unit: 'MWe' }
+        ];
         function drawChart() {
             const w = chartCanvas.width = chartCanvas.parentElement.clientWidth;
             const h = chartCanvas.height = chartCanvas.parentElement.clientHeight;
@@ -1136,31 +1146,43 @@
             chartCtx.clearRect(0, 0, w, h);
             chartCtx.strokeStyle = '#1e293b'; chartCtx.lineWidth = 1;
             for (let i = 1; i < 4; i++) { chartCtx.beginPath(); chartCtx.moveTo(0, (h/4)*i); chartCtx.lineTo(w, (h/4)*i); chartCtx.stroke(); }
-            if (REACTOR.history.length < 2) return;
-            const stepX = w / (REACTOR.maxHistorySize - 1);
-            const line = (key, scale, color) => {
-                chartCtx.strokeStyle = color; chartCtx.lineWidth = 1.5; chartCtx.beginPath();
-                for (let i = 0; i < REACTOR.history.length; i++) {
-                    const y = h - (REACTOR.history[i][key] / scale) * (h - 5) - 2;
-                    if (i === 0) chartCtx.moveTo(i * stepX, y); else chartCtx.lineTo(i * stepX, y);
+
+            if (REACTOR.history.length >= 2) {
+                const stepX = w / (REACTOR.maxHistorySize - 1);
+                for (const s of CHART_SERIES) {
+                    chartCtx.strokeStyle = s.color; chartCtx.lineWidth = 1.5; chartCtx.beginPath();
+                    for (let i = 0; i < REACTOR.history.length; i++) {
+                        const v = Math.max(0, Math.min(s.scale, REACTOR.history[i][s.key]));
+                        const y = h - (v / s.scale) * (h - 4) - 2;
+                        if (i === 0) chartCtx.moveTo(i * stepX, y); else chartCtx.lineTo(i * stepX, y);
+                    }
+                    chartCtx.stroke();
                 }
-                chartCtx.stroke();
-            };
-            line('power', 3800, '#22c55e');
-            line('temp', PHYSICS.meltdownTemp, '#06b6d4');
-            line('mwe', 650, '#e879f9');
+            }
+            // Live-Werte (oben links, farbig) + Skalenhinweis (unten) als y-Achsen-Beschriftung
+            chartCtx.font = '10px monospace'; chartCtx.textBaseline = 'top';
+            let lx = 4;
+            for (const s of CHART_SERIES) {
+                const txt = `${REACTOR[s.live].toFixed(0)} ${s.unit}`;
+                chartCtx.fillStyle = s.color; chartCtx.fillText(txt, lx, 2);
+                lx += chartCtx.measureText(txt).width + 9;
+            }
+            chartCtx.fillStyle = '#64748b'; chartCtx.textBaseline = 'bottom';
+            chartCtx.fillText('Skala 0–1000 MW · 0–1200 °C · 0–300 MWe', 4, h - 1);
         }
 
         // --- LERN-/HINWEISSYSTEM (hybrid: kontextabhängig + rotierender Ticker) ---
         const HINT_RULES = [
             { test: r => r.rhoDollars >= 1, level: 'danger', text: 'PROMPT-KRITISCH! Reaktivität ≥ 1 $ — die Leistung wächst ungebremst. Sofort Steuerstäbe einfahren!' },
             { test: r => r.fuelTemp > PHYSICS.claddingTemp, level: 'danger', text: 'Hüllrohr-Schadenstemperatur überschritten! Leistung senken oder kühlen, sonst droht die Kernschmelze.' },
-            { test: r => r.dnb <= 0, level: 'danger', text: 'Wärmeübergangskrise (DNB)! Das Kühlmittel siedet. Druck erhöhen oder Leistung drosseln.' },
-            { test: r => isFinite(r.period) && r.period > 0 && r.period < 12, level: 'danger', text: 'Sehr kurze Reaktorperiode — die Leistung verdoppelt sich rasch. Reaktivität zurücknehmen.' },
-            { test: r => r.voidFrac > 0.05, level: 'warn', text: 'Dampfblasen (Void) im Kühlmittel — sie verschlechtern Kühlung UND Moderation. Druck rauf oder Temperatur runter.' },
-            { test: r => r.dnb < PHYSICS.dnbWarn && r.power > 50, level: 'warn', text: 'Siedereserve niedrig: Kühlmittel nähert sich der Siedetemperatur. Mehr Druck oder mehr Durchsatz.' },
-            { test: r => Math.abs(r.gridFreq - 50) > 0.8, level: 'warn', text: 'Netzfrequenz weicht ab! Erzeugung an den Bedarf anpassen: Turbinenlast und Reaktorleistung abgleichen.' },
-            { test: r => r.xenon > 0.35, level: 'warn', text: 'Hoher Xenon-Pegel vergiftet die Reaktion. Bei Lastabsenkung droht das „Jodloch" — Bor/Stäbe vorausschauend nachführen.' },
+            { test: r => r.dnb <= 0, level: 'danger', text: 'Wärmeübergangskrise (DNB)! Das Kühlmittel siedet. Druck-Soll erhöhen ODER Leistung senken (Steuerstäbe EINfahren).' },
+            { test: r => isFinite(r.period) && r.period > 0 && r.period < 8 && r.rhoDollars > 0.2 && r.power > 40, level: 'danger', text: 'Leistung steigt schnell (kurze Periode)! Steuerstäbe etwas EINfahren, um die Reaktivität zu senken.' },
+            { test: r => r.voidFrac > 0.05, level: 'warn', text: 'Dampfblasen (Void) im Kühlmittel — sie verschlechtern Kühlung UND Moderation. Druck-Soll erhöhen oder Leistung senken.' },
+            { test: r => r.dnb < PHYSICS.dnbWarn && r.power > 50, level: 'warn', text: 'Siedereserve niedrig: Kühlmittel nähert sich der Siedetemperatur. Druck-Soll oder Kühlmitteldurchsatz erhöhen.' },
+            { test: r => Math.abs(r.gridFreq - 50) > 0.8, level: 'warn', text: 'Netzfrequenz weicht ab! Erzeugung an den Bedarf anpassen: Turbinen-Last und Reaktorleistung (Steuerstäbe) abgleichen.' },
+            { test: r => r.power > 25 && r.rhoDollars < -0.15 && r.xenon > 0.05, level: 'warn', text: 'Xenon vergiftet die Reaktion → die Leistung sinkt. Gegensteuern: Steuerstäbe HERAUSziehen (oder Bor-Soll senken), um Reaktivität zuzugeben.' },
+            { test: r => r.power > 25 && r.rhoDollars < -0.3, level: 'warn', text: 'Reaktor leicht unterkritisch (Leistung fällt). Steuerstäbe HERAUSziehen oder Bor-Soll senken, um die Leistung zu halten.' },
+            { test: r => r.xenon > 0.35, level: 'warn', text: 'Sehr hoher Xenon-Pegel. Nach Lastabsenkung droht das „Jodloch" — Steuerstäbe/Bor vorausschauend nachführen.' },
             { test: r => r.scramActive || (r.decayHeat > 5 && r.fissionPower < 5), level: 'info', text: 'Nach Abschaltung bleibt Nachzerfallswärme: die Temperatur kann noch steigen. Kühlung aufrechterhalten!' }
         ];
         const HINT_POOL = [

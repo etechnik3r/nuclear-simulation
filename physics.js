@@ -50,7 +50,7 @@
         moderatorRate: 0.14,          // Thermalisierungsrate / 60-fps-Frame
         parasiticThermal: 0.015,      // parasitäre Absorption thermisch / Frame
         parasiticFast: 0.002,         // parasitäre Absorption schnell / Frame
-        xenonVisualAbsorb: 0.40,      // Neutronen-Absorption durch Xe pro Xenon-Einheit / Frame
+        xenonVisualAbsorb: 0.22,      // Neutronen-Absorption durch Xe pro Xenon-Einheit / Frame
         maxNeutrons: 2000,            // Performance-Obergrenze (kein Physik-Term)
         basePowerScale: 0.08,         // Umrechnung Spaltenergie-Eintrag -> thermische Leistung (MW)
         rodWorth: 0.06,               // globale Steuerstab-Wirkung (Absorption pro Einfahrtiefe / Frame) – zuverlässige Regelung
