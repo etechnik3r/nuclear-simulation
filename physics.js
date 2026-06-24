@@ -39,23 +39,24 @@
         fissionEnergy: 680,           // Energie-Einheiten pro Spaltung (arbiträr)
         backgroundSource: 0.15,       // Quellterm-Wahrscheinlichkeit / 60-fps-Frame
         minNeutronsStarthilfe: 15,    // unter dieser Zahl: erhöhter Quellterm
-        wallReflectivity: 0.93,       // Reflektor-Wirkungsgrad an der Kerngrenze
+        wallReflectivity: 0.95,       // Reflektor-Wirkungsgrad an der Kerngrenze
         promptChance2: 0.85,          // P(2. promptes Neutron)
         promptChance3: 0.45,          // P(3. promptes Neutron)  -> ν_prompt ≈ 2,30
         delayedChance: 0.05,          // verzögerter Anteil (ÜBERHÖHT für Sichtbarkeit; real β≈0,0065)
         delayedDelayMin: 500,         // ms, untere Verzögerung
         delayedDelayMax: 1800,        // ms, obere Verzögerung
         fissionChanceThermal: 0.92,   // Spaltwahrscheinlichkeit thermisch (illustrativ)
-        fissionChanceFast: 0.12,      // Spaltwahrscheinlichkeit schnell (illustrativ)
+        fissionChanceFast: 0.15,      // Spaltwahrscheinlichkeit schnell (illustrativ)
         moderatorRate: 0.14,          // Thermalisierungsrate / 60-fps-Frame
         parasiticThermal: 0.015,      // parasitäre Absorption thermisch / Frame
         parasiticFast: 0.002,         // parasitäre Absorption schnell / Frame
         xenonVisualAbsorb: 0.40,      // Neutronen-Absorption durch Xe pro Xenon-Einheit / Frame
-        maxNeutrons: 1400,            // Performance-Obergrenze (kein Physik-Term)
+        maxNeutrons: 2000,            // Performance-Obergrenze (kein Physik-Term)
         basePowerScale: 0.08,         // Umrechnung Spaltenergie-Eintrag -> thermische Leistung (MW)
+        rodWorth: 0.06,               // globale Steuerstab-Wirkung (Absorption pro Einfahrtiefe / Frame) – zuverlässige Regelung
 
         // --- Reaktivitäts-Rückkopplung (negativ) ---
-        dopplerCoeff: 750,            // Brennstoff-/Doppler-Rückkopplung (kleiner = stärker, prompt)
+        dopplerCoeff: 650,            // Brennstoff-/Doppler-Rückkopplung (kleiner = stärker, prompt)
         modTempCoeff: 1200,           // Moderator-/Kühlmittel-Temperaturkoeffizient (kleiner = stärker)
 
         // --- Iodine/Xenon-Kinetik (physikalische Zeitkonstanten) ---
@@ -76,7 +77,7 @@
         coolantMin: 0.05,             // minimaler effektiver Kühlmitteldurchsatz
         fuelHeatCoef: 0.7,            // Kopplung Leistung -> Brennstofftemperatur (heißer Brennstoff -> wirksamer Doppler)
         fuelCoolCoef: 1.2,            // Wärmeübergang Brennstoff -> Kühlmittel
-        coolCoef: 4.5,                // Wärmeabfuhr Kühlmittel -> Sekundärkreis (hoch -> Kühlmittel bleibt unter Sättigung)
+        coolCoef: 6.5,                // Wärmeabfuhr Kühlmittel -> Sekundärkreis (hoch -> Kühlmittel bleibt unter Sättigung)
         fuelCap: 4.0,                 // Wärmekapazität Brennstoffknoten (größer = träger)
         coolCap: 8.0,                 // Wärmekapazität Kühlmittelknoten
 
@@ -85,8 +86,8 @@
         meltdownTemp: 2800,           // °C, Brennstoffschmelze (UO₂ ~2865 °C)
 
         // --- Leistungsglättung & Zeitbasis ---
-        tauPower: 0.3,                // s, Reaktionszeit der Spaltleistung (Echtzeit)
-        timeAccel: 1500,             // Beschleunigung der "Reaktorzeit" für langsame Prozesse
+        tauPower: 2.5,                // s, Reaktionszeit der Spaltleistung (Echtzeit)
+        timeAccel: 300,             // Beschleunigung der "Reaktorzeit" für langsame Prozesse
 
         // --- Turbine / Sekundärkreis / Netz ---
         turbineEfficiency: 0.33,      // thermischer Wirkungsgrad (Wärme -> Strom)

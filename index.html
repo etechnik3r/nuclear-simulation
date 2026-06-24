@@ -107,23 +107,23 @@
                     <div class="space-y-0.5">
                         <div class="flex justify-between items-center gap-1">
                             <label class="text-[11px] font-medium text-slate-300 truncate" title="Der Moderator bremst schnelle Neutronen auf thermische Energie ab – erst dann spalten sie U-235 effektiv. Mehr Moderation = mehr Reaktivität.">Moderator</label>
-                            <span id="modValDisplay" class="text-[11px] font-mono font-semibold text-teal-400 shrink-0">70%</span>
+                            <span id="modValDisplay" class="text-[11px] font-mono font-semibold text-teal-400 shrink-0">85%</span>
                         </div>
-                        <input type="range" id="moderator" min="0" max="100" value="70" class="w-full h-1.5 bg-slate-950 rounded-lg appearance-none cursor-pointer border border-slate-800" title="Thermalisierung der Neutronen">
+                        <input type="range" id="moderator" min="0" max="100" value="85" class="w-full h-1.5 bg-slate-950 rounded-lg appearance-none cursor-pointer border border-slate-800" title="Thermalisierung der Neutronen">
                     </div>
                     <div class="space-y-0.5">
                         <div class="flex justify-between items-center gap-1">
                             <label class="text-[11px] font-medium text-slate-300 truncate" title="Pumpendurchsatz des Primärkreises: transportiert Wärme aus dem Kern. Zu wenig Durchsatz -> Temperatur steigt.">Kühlmittel</label>
-                            <span id="coolantValDisplay" class="text-[11px] font-mono font-semibold text-cyan-400 shrink-0">50%</span>
+                            <span id="coolantValDisplay" class="text-[11px] font-mono font-semibold text-cyan-400 shrink-0">75%</span>
                         </div>
-                        <input type="range" id="coolant" min="5" max="100" value="50" class="w-full h-1.5 bg-slate-950 rounded-lg appearance-none cursor-pointer border border-slate-800" title="Primärkreis-Pumpendurchsatz">
+                        <input type="range" id="coolant" min="5" max="100" value="75" class="w-full h-1.5 bg-slate-950 rounded-lg appearance-none cursor-pointer border border-slate-800" title="Primärkreis-Pumpendurchsatz">
                     </div>
                     <div class="space-y-0.5">
                         <div class="flex justify-between items-center gap-1">
                             <label class="text-[11px] font-medium text-slate-300 truncate" title="Turbinen-Frischdampfventil: regelt die Dampfentnahme = Wärmesenke. Mehr Last kühlt den Primärkreis -> über die negative Rückkopplung folgt die Reaktorleistung nach (Lastfolge). Last 0 = Turbinen-Trip!">Turbine</label>
-                            <span id="turbineValDisplay" class="text-[11px] font-mono font-semibold text-yellow-400 shrink-0">0%</span>
+                            <span id="turbineValDisplay" class="text-[11px] font-mono font-semibold text-yellow-400 shrink-0">60%</span>
                         </div>
-                        <input type="range" id="turbine" min="0" max="100" value="0" class="w-full h-1.5 bg-slate-950 rounded-lg appearance-none cursor-pointer border border-slate-800" title="Dampfentnahme der Turbine = Wärmesenke">
+                        <input type="range" id="turbine" min="0" max="100" value="60" class="w-full h-1.5 bg-slate-950 rounded-lg appearance-none cursor-pointer border border-slate-800" title="Dampfentnahme der Turbine = Wärmesenke">
                     </div>
                     <div class="space-y-0.5">
                         <div class="flex justify-between items-center gap-1">
@@ -737,7 +737,7 @@
             GAME.scenario = id;
             GAME.elapsed = 0; GAME.holdTimer = 0; GAME.data = {};
             PHYSICS = { ...RP.PHYSICS_DEFAULTS };
-            setControls({ rods: 30, mod: 70, coolant: 50, turbine: 0, demand: 0, boron: 0, pressure: 155 });
+            setControls({ rods: 30, mod: 85, coolant: 75, turbine: 60, demand: 0, boron: 0, pressure: 155 });
             refuelSpeedSlider.value = 10;
             REACTOR.autoRefuel = true; updateAutoRefuelUI();
             softReset();
@@ -887,7 +887,7 @@
             if (REACTOR.autoRefuel) {
                 const fissionedAtoms = REACTOR.atoms.filter(a => a.status === 'fissioned');
                 if (fissionedAtoms.length > 0) {
-                    const dynamicChance = (0.06 + ((fissionedAtoms.length / REACTOR.atoms.length) * 1.8)) * refuelSpeedMult * dtScale;
+                    const dynamicChance = (0.06 + ((fissionedAtoms.length / REACTOR.atoms.length) * 1.2)) * refuelSpeedMult * dtScale;
                     let refuelsToProcess = Math.floor(dynamicChance) + (Math.random() < (dynamicChance % 1) ? 1 : 0);
                     for (let k = 0; k < refuelsToProcess; k++) {
                         const cur = REACTOR.atoms.filter(a => a.status === 'fissioned');
@@ -932,6 +932,8 @@
                         if (n.x >= rodX - 7 && n.x <= rodX + 7 && n.y >= boxY && n.y <= boxY + currentRodLength) { REACTOR.neutrons.splice(i, 1); deaths++; absorbed = true; break; }
                     }
                     if (absorbed) continue;
+                    // Globale Steuerstab-Wirkung (zuverlässig regelbar, unabhängig von der schmalen Stab-Geometrie)
+                    if (Math.random() < (rodInsertion * PHYSICS.rodWorth * stepScale)) { REACTOR.neutrons.splice(i, 1); deaths++; continue; }
 
                     // Xenon-Absorption
                     if (Math.random() < (REACTOR.xenon * PHYSICS.xenonVisualAbsorb * stepScale)) { REACTOR.neutrons.splice(i, 1); deaths++; continue; }
@@ -1176,25 +1178,43 @@
         ];
         const hintColors = { info: 'text-slate-300', warn: 'text-yellow-300', danger: 'text-red-400 font-semibold' };
         const hintIcons = { info: 'lightbulb', warn: 'alert-triangle', danger: 'alert-octagon' };
-        let tickerTimer = 0, tickerIdx = 0, showingRule = false, lastHintKey = null;
+        const HINT_SEV = { info: 0, warn: 1, danger: 2 };
+        const HINT_MIN_DWELL = 5;   // s – ein Hinweis bleibt mind. so lange stehen (kein Flackern)
+        let tickerTimer = 0, tickerIdx = 0, hintAge = 999, displayedText = null, displayedSev = -1;
 
-        function showHint(text, level) {
-            if (text === lastHintKey) return;
-            lastHintKey = text;
+        function setHint(text, level) {
+            displayedText = text; displayedSev = HINT_SEV[level]; hintAge = 0;
             hintText.innerText = text;
             hintText.className = hintColors[level] || hintColors.info;
             hintIcon.setAttribute('data-lucide', hintIcons[level] || 'lightbulb');
             hintIcon.className = `w-4 h-4 shrink-0 mt-0.5 ${level === 'danger' ? 'text-red-400' : (level === 'warn' ? 'text-yellow-400' : 'text-indigo-400')}`;
             lucide.createIcons();
         }
+        function currentHintContext() {
+            if (GAME.activeEvents.length > 0) return { text: EVENTS[GAME.activeEvents[0].id].alarm, level: 'danger' };
+            const rule = HINT_RULES.find(r => r.test(REACTOR));
+            if (rule) return { text: rule.text, level: rule.level };
+            return null;
+        }
         function updateHints(dtReal) {
             if (REACTOR.isMeltdown) return;
-            if (GAME.activeEvents.length > 0) { showHint(EVENTS[GAME.activeEvents[0].id].alarm, 'danger'); showingRule = true; tickerTimer = 0; return; }
-            const rule = HINT_RULES.find(r => r.test(REACTOR));
-            if (rule) { showHint(rule.text, rule.level); showingRule = true; tickerTimer = 0; return; }
-            if (showingRule) { showingRule = false; tickerTimer = 999; }
+            hintAge += dtReal;
+            const ctx = currentHintContext();
+            if (ctx) {
+                if (ctx.text === displayedText) { tickerTimer = 0; return; }   // unverändert
+                // Wechsel nur, wenn die Mindestdauer vorbei ist – außer es eskaliert (höhere Dringlichkeit)
+                if (HINT_SEV[ctx.level] > displayedSev || hintAge >= HINT_MIN_DWELL) setHint(ctx.text, ctx.level);
+                tickerTimer = 0;
+                return;
+            }
+            // kein Kontext-Hinweis aktiv: zuletzt gezeigte Warnung noch die Mindestdauer halten
+            if (displayedSev > 0 && hintAge < HINT_MIN_DWELL) return;
             tickerTimer += dtReal;
-            if (tickerTimer >= 12) { showHint(HINT_POOL[tickerIdx], 'info'); tickerIdx = (tickerIdx + 1) % HINT_POOL.length; tickerTimer = 0; }
+            if (displayedText === null || displayedSev > 0 || tickerTimer >= 12) {
+                setHint(HINT_POOL[tickerIdx], 'info');
+                tickerIdx = (tickerIdx + 1) % HINT_POOL.length;
+                tickerTimer = 0;
+            }
         }
 
         // --- Settings-Modal ---
@@ -1258,7 +1278,7 @@
         autoRefuelBtn.addEventListener('click', () => { REACTOR.autoRefuel = !REACTOR.autoRefuel; updateAutoRefuelUI(); });
         neutronSourceBtn.addEventListener('click', () => {
             const w = canvas.width/window.devicePixelRatio, h = canvas.height/window.devicePixelRatio;
-            for (let k=0; k<25; k++) REACTOR.neutrons.push(new Neutron(w/2+(Math.random()*40-20), h/2+(Math.random()*40-20), false));
+            for (let k=0; k<15; k++) REACTOR.neutrons.push(new Neutron(w/2+(Math.random()*40-20), h/2+(Math.random()*40-20), false));
         });
         resetMeltdownBtn.addEventListener('click', () => {
             REACTOR.isMeltdown = false; REACTOR.temperature = 150; REACTOR.fuelTemp = 150;
@@ -1268,8 +1288,8 @@
             REACTOR.accBirths = 0; REACTOR.accDeaths = 0; REACTOR.accTime = 0; REACTOR.prevFlux = 0;
             REACTOR.claddingDamaged = false; REACTOR.autoRefuel = false; updateAutoRefuelUI();
             PHYSICS = { ...RP.PHYSICS_DEFAULTS };
-            controlRodsSlider.value = 30; moderatorSlider.value = 70; coolantSlider.value = 50;
-            turbineSlider.value = 0; demandSlider.value = 0; boronTargetSlider.value = 0; pressureTargetSlider.value = 155; refuelSpeedSlider.value = 8.0;
+            controlRodsSlider.value = 30; moderatorSlider.value = 85; coolantSlider.value = 75;
+            turbineSlider.value = 60; demandSlider.value = 0; boronTargetSlider.value = 0; pressureTargetSlider.value = 155; refuelSpeedSlider.value = 10;
             initGrid(); meltdownOverlay.classList.remove('flex'); meltdownOverlay.classList.add('hidden'); stopAlarmSound();
         });
         canvas.addEventListener('mousedown', (e) => {
