@@ -191,4 +191,23 @@ test('gridFrequency: Überschuss > 50 Hz, Defizit < 50 Hz, Bedarf 0 => 50 Hz', (
     assert.strictEqual(RP.gridFrequency(500, 0, P), 50);
 });
 
+// --- Vollständigkeit der Default-Konstanten -----------------------------------
+// index.html liest diese PHYSICS.*-Schlüssel; fehlt einer, wird er undefined und
+// reißt die gesamte Rechnung auf NaN (z.B. der frühere basePowerScale-Bug).
+test('PHYSICS_DEFAULTS enthält alle von index.html benötigten Schlüssel', () => {
+    const required = [
+        'fissionEnergy', 'backgroundSource', 'minNeutronsStarthilfe', 'wallReflectivity',
+        'promptChance2', 'promptChance3', 'delayedChance', 'delayedDelayMin', 'delayedDelayMax',
+        'fissionChanceThermal', 'fissionChanceFast', 'moderatorRate', 'parasiticThermal',
+        'parasiticFast', 'xenonVisualAbsorb', 'maxNeutrons', 'basePowerScale',
+        'dopplerCoeff', 'modTempCoeff', 'nominalPower', 'tauPower', 'timeAccel',
+        'claddingTemp', 'meltdownTemp', 'turbineEfficiency', 'boronRate', 'boronAbsorbCoef',
+        'pressureRate', 'voidReactivityCoef', 'voidCoolingPenalty', 'dnbWarn', 'periodCap'
+    ];
+    for (const key of required) {
+        assert.ok(typeof P[key] === 'number' && isFinite(P[key]),
+            `PHYSICS_DEFAULTS.${key} fehlt oder ist keine endliche Zahl`);
+    }
+});
+
 console.log(`\n${passed} Tests bestanden.`);

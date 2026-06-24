@@ -52,6 +52,7 @@
         parasiticFast: 0.002,         // parasitäre Absorption schnell / Frame
         xenonVisualAbsorb: 0.40,      // Neutronen-Absorption durch Xe pro Xenon-Einheit / Frame
         maxNeutrons: 1400,            // Performance-Obergrenze (kein Physik-Term)
+        basePowerScale: 0.08,         // Umrechnung Spaltenergie-Eintrag -> thermische Leistung (MW)
 
         // --- Reaktivitäts-Rückkopplung (negativ) ---
         dopplerCoeff: 1500,           // Brennstoff-/Doppler-Rückkopplung (kleiner = stärker, prompt)
