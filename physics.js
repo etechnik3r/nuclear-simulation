@@ -85,7 +85,32 @@
 
         // --- Leistungsglättung & Zeitbasis ---
         tauPower: 0.3,                // s, Reaktionszeit der Spaltleistung (Echtzeit)
-        timeAccel: 1500              // Beschleunigung der "Reaktorzeit" für langsame Prozesse
+        timeAccel: 1500,             // Beschleunigung der "Reaktorzeit" für langsame Prozesse
+
+        // --- Turbine / Sekundärkreis / Netz ---
+        turbineEfficiency: 0.33,      // thermischer Wirkungsgrad (Wärme -> Strom)
+        turbineMinSink: 0.12,         // Rest-Wärmeabfuhr bei Last 0 (Kondensator/Bypass)
+        gridStiffness: 12,            // Hz pro relativer Leistungsabweichung (Netzsteifigkeit)
+        gridNominalFreq: 50,          // Hz
+
+        // --- Bor (chemische Reaktivitätsregelung) ---
+        boronMax: 2000,               // ppm, Maximalkonzentration
+        boronRate: 8,                 // ppm/s, Annäherung Ist an Soll (langsam = "chemical shim")
+        boronAbsorbCoef: 5e-5,        // Absorptionswahrscheinlichkeit pro ppm / 60-fps-Frame (Teilchenmodell)
+        boronPcmPerPpm: 8,            // Reaktivitätswert für die Anzeige (pcm pro ppm)
+
+        // --- Druck / Sieden / Void ---
+        pressureMin: 30,              // bar
+        pressureMax: 160,             // bar
+        pressureNominal: 155,         // bar (PWR-typisch)
+        pressureRate: 6,              // bar/s, Annäherung Ist an Soll (Druckhalter)
+        voidBand: 25,                 // °C unterhalb der Sättigung beginnt nennenswerter Void
+        voidReactivityCoef: 0.6,      // wie stark Void die Moderation senkt (0..1 -> bis -60%)
+        voidCoolingPenalty: 0.7,      // wie stark Void die Wärmeabfuhr verschlechtert
+        dnbWarn: 30,                  // °C Siedereserve, ab der gewarnt wird
+
+        // --- Reaktivität / Periode (Anzeige) ---
+        periodCap: 999                // s, Anzeige-Obergrenze (alles darüber = "stabil/∞")
     };
 
     /**
@@ -135,18 +160,24 @@
     /**
      * Zwei-Knoten-Thermohydraulik (Brennstoff + Kühlmittel), Echtzeit (s).
      * totalThermalPower = Spaltleistung + Nachzerfallswärme.
+     * turbineLoad (0..1): Dampfentnahme der Turbine = Wärmesenke des Sekundärkreises.
+     *   Bei Last 0 (Turbinen-Trip) bleibt nur die Rest-Senke turbineMinSink -> Kern heizt auf.
      * Mutiert state.fuelTemp und state.temperature.
+     * Gibt zusätzlich die abgeführte Wärme zurück (-> daraus folgt die elektrische Leistung).
      */
-    function thermalStep(state, totalThermalPower, coolantFlow, dt, P) {
+    function thermalStep(state, totalThermalPower, coolantFlow, turbineLoad, dt, P) {
         const cf = Math.max(P.coolantMin, coolantFlow);
+        const sink = P.turbineMinSink + (1 - P.turbineMinSink) * Math.max(0, Math.min(1, turbineLoad));
         const gap = state.fuelTemp - state.temperature;
 
+        const heatRemoved = (state.temperature - P.ambient) * cf * P.coolCoef * sink;
+
         state.fuelTemp += ((totalThermalPower * P.fuelHeatCoef - gap * P.fuelCoolCoef) / P.fuelCap) * dt;
-        state.temperature += ((gap * P.fuelCoolCoef - (state.temperature - P.ambient) * cf * P.coolCoef) / P.coolCap) * dt;
+        state.temperature += ((gap * P.fuelCoolCoef - heatRemoved) / P.coolCap) * dt;
 
         if (state.temperature < P.ambient) state.temperature = P.ambient;
         if (state.fuelTemp < state.temperature) state.fuelTemp = state.temperature; // Brennstoff nie kälter als Kühlmittel
-        return { fuelTemp: state.fuelTemp, temperature: state.temperature };
+        return { fuelTemp: state.fuelTemp, temperature: state.temperature, heatRemoved: Math.max(0, heatRemoved) };
     }
 
     /**
@@ -160,6 +191,72 @@
         return births / deaths;
     }
 
+    /**
+     * Reaktivität aus k-eff. rho = (k-1)/k. In "Dollar" relativ zum verzögerten
+     * Neutronenanteil beta: $ = rho/beta. $ >= 1 bedeutet prompt-kritisch (gefährlich).
+     */
+    function reactivity(keff, beta) {
+        if (keff <= 0) return { rho: -1, pcm: -100000, dollars: -1 / Math.max(1e-9, beta) };
+        const rho = (keff - 1) / keff;
+        return { rho, pcm: rho * 1e5, dollars: rho / Math.max(1e-9, beta) };
+    }
+
+    /**
+     * Reaktorperiode (s) = Zeit für eine Änderung der Leistung um den Faktor e.
+     * growthPerSec = d(ln N)/dt. Sehr kleine Raten -> sehr lange Periode (gecappt).
+     */
+    function reactorPeriod(growthPerSec, P) {
+        const cap = (P && P.periodCap) || 999;
+        if (!isFinite(growthPerSec) || Math.abs(growthPerSec) < 1 / cap) return Infinity;
+        return 1 / growthPerSec;
+    }
+
+    /**
+     * Sättigungstemperatur von Wasser (°C) als Funktion des Drucks (bar).
+     * Einfache, monoton steigende Näherung (1 bar -> 100 °C, 155 bar -> ~345 °C).
+     */
+    function saturationTemp(pressureBar) {
+        const p = Math.max(1, pressureBar);
+        return 100 + 112 * Math.log10(p);
+    }
+
+    /**
+     * Void-/Dampfblasenanteil (0..1): steigt, wenn die Kühlmitteltemperatur
+     * innerhalb von voidBand an die Sättigungstemperatur heranreicht.
+     */
+    function voidFraction(coolTemp, satTemp, P) {
+        const band = (P && P.voidBand) || 25;
+        return Math.max(0, Math.min(1, (coolTemp - (satTemp - band)) / band));
+    }
+
+    /**
+     * Siedereserve / DNB-Marge (°C): Abstand der Kühlmitteltemperatur zur Sättigung.
+     * Positiv = sicher, <= 0 = Sieden / Wärmeübergangskrise.
+     */
+    function dnbMargin(coolTemp, satTemp) {
+        return satTemp - coolTemp;
+    }
+
+    /**
+     * Reaktivitätswert der Bor-Konzentration (pcm, negativ) – nur für die Anzeige.
+     * Die tatsächliche Wirkung steckt im Teilchenmodell (Absorption ∝ ppm).
+     */
+    function boronWorthPcm(ppm, P) {
+        return -ppm * ((P && P.boronPcmPerPpm) || 8);
+    }
+
+    /**
+     * Netzfrequenz (Hz) aus Erzeugung/Bedarf. Überschuss -> Frequenz steigt,
+     * Defizit -> Frequenz fällt. Annäherung an die Realität (Netzsteifigkeit).
+     */
+    function gridFrequency(supplyMWe, demandMWe, P) {
+        const f0 = (P && P.gridNominalFreq) || 50;
+        const stiff = (P && P.gridStiffness) || 12;
+        if (demandMWe <= 0) return f0;
+        const dev = (supplyMWe - demandMWe) / demandMWe;
+        return f0 + stiff * dev;
+    }
+
     return {
         AMBIENT,
         PHYSICS_DEFAULTS,
@@ -167,6 +264,13 @@
         xenonStep,
         decayHeatStep,
         thermalStep,
-        keffFromCounts
+        keffFromCounts,
+        reactivity,
+        reactorPeriod,
+        saturationTemp,
+        voidFraction,
+        dnbMargin,
+        boronWorthPcm,
+        gridFrequency
     };
 });
